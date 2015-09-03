@@ -37,7 +37,6 @@ var App = React.createClass({
 		else{
 			this.addToFavorites(location);
 		}
-
 	},
 
 	addToFavorites(location){
@@ -49,8 +48,6 @@ var App = React.createClass({
 		this.setState({
 			favorites: store.getAll()
 		});
-
-		console.log(store.getAll())
 	},
 
 	removeFromFavorites(location){

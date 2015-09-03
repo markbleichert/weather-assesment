@@ -1,8 +1,12 @@
-var localStorage = window.localStorage;
 
 class FavoritesStore {
+	constructor() {
+		this.localStorage = localStorage;
+
+	}
+
 	getAll() {
-		return JSON.parse(localStorage.getItem('favorites')) || [];
+		return JSON.parse(this.localStorage.getItem('favorites')) || [];
 	}
 
 	getByAddress(address) {
@@ -20,7 +24,7 @@ class FavoritesStore {
 	}
 
 	updateStorage(favorites) {
-		localStorage.setItem('favorites', JSON.stringify(favorites));
+		this.localStorage.setItem('favorites', JSON.stringify(favorites));
 	}
 
 	add(location) {
@@ -64,4 +68,4 @@ class FavoritesStore {
 }
 
 // for now init here !
-module.exports = new FavoritesStore();
+module.exports = new FavoritesStore(window.localStorage);
