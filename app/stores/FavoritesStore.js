@@ -38,7 +38,7 @@ class FavoritesStore {
 			timestamp: Date.now()
 		});
 
-		this.updateStorage(favorites)
+		this.updateStorage(favorites);
 	}
 
 	remove(location) {

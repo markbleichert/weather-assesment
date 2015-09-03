@@ -23,7 +23,7 @@ var Map = React.createClass({
 		}
 
 		this.lastLat = this.props.coords.lat;
-		this.lastLng = this.props.coords.lng
+		this.lastLng = this.props.coords.lng;
 
 		var map = new GMaps({
 			el: '#map',

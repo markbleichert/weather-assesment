@@ -13,11 +13,14 @@ var LocationList = React.createClass({
 
 			// Passing the onClick callback of this
 			// LocationList to each LocationItem.
-			return <LocationItem
-						location={l.location}
-						timestamp={l.timestamp}
-						active={active}
-						onClick={self.props.onClick} />
+			return (
+				<LocationItem
+					location={l.location}
+					timestamp={l.timestamp}
+					active={active}
+					onClick={self.props.onClick}
+				/>
+			);
 		});
 
 		if (!locations.length) {
@@ -29,7 +32,7 @@ var LocationList = React.createClass({
 				<span className="list-group-item active">Saved Locations</span>
 				{locations}
 			</div>
-		)
+		);
 
 	}
 

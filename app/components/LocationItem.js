@@ -3,6 +3,7 @@ var React = require('react');
 var LocationItem = React.createClass({
 
 	handleClick() {
+		// TODO: catch error
 		this.props.onClick(this.props.location.name);
 	},
 
@@ -20,7 +21,7 @@ var LocationItem = React.createClass({
 				<span className="createdAt">{ this.props.timestamp }</span>
 				<span className="glyphicon glyphicon-menu-right"></span>
 			</a>
-		)
+		);
 
 	}
 
