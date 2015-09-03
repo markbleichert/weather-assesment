@@ -10,7 +10,7 @@ var LocationList = require('./LocationList');
 var store = require('../stores/FavoritesStore');
 
 
-require('../styles/global.css');
+require('../styles/global.less');
 
 var App = React.createClass({
 
