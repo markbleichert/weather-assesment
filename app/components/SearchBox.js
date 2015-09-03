@@ -1,5 +1,5 @@
-import React from 'react';
-import Select from 'react-select';
+var React = require('react');
+var Select = require('react-select');
 
 require('react-select/less/default.less');
 //require('../styles/searchbox.css)
