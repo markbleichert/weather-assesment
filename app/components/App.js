@@ -154,7 +154,7 @@ var App = React.createClass({
 				</div>
 				<div className={"row"}>
 					<div className={"col-md-3"}>
-						<SearchBox onSearch={this.searchForAddress} label="Locations" data={listItems} />
+						<SearchBox onSearch={this.searchForAddress} label="Locations" data={listItems}/>
 						<LocationList locations={this.state.favorites} activeLocation={this.state.location}
 									  onClick={this.searchForAddress} />
 					</div>
