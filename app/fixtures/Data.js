@@ -1,4 +1,4 @@
-var data = [
+module.exports = [
 	{
 		"station_id":1438,
 		"place_name":"Amsterdam",
@@ -8470,34 +8470,3 @@ var data = [
 		"precipitation_mm":"4.8"
 	}
 ];
-
-module.exports = {
-	getCurrentLocationItems: function (location_id) {
-
-		return data.filter(function (obj) {
-			// change naming this is confusing ! place_name == location_id
-			if (obj.place_name == location_id) {
-				return (obj);
-			}
-		});
-	},
-
-	getListItems: function () {
-		var arr = [];
-		var lastId = null;
-
-		data.forEach(function (obj) {
-			if (obj.station_id !== lastId) {
-
-				// check if ID property is used ok in react iterator
-				arr.push({
-					id: obj.station_id,
-					value: obj.place_name,
-					label: obj.place_name
-				});
-			}
-			lastId = obj.station_id;
-		});
-		return arr;
-	}
-}

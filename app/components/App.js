@@ -1,13 +1,12 @@
 var React = require('react');
 
-var DATA = require('./Data');
-
 var SearchBox = require('./SearchBox');
 var Forecast = require('./Forecast');
 var Map = require('./Map');
 var CurrentLocation = require('./CurrentLocation');
 var LocationList = require('./LocationList');
 var store = require('../stores/FavoritesStore');
+var dataStore = require('../stores/DataStore');
 
 
 require('../styles/global.less');
@@ -65,6 +64,8 @@ var App = React.createClass({
 
 	searchForAddress(location_name) {
 
+		//TODO: search based longtitude/latitude
+
 		GMaps.geocode({
 			address: location_name,
 			callback: (results, status) => {
@@ -90,8 +91,10 @@ var App = React.createClass({
 	},
 
 	render() {
-		var listItems = DATA.getListItems();
-		var locations = DATA.getCurrentLocationItems(this.state.location.name);
+
+		// get the necessary data from the datastore
+		var listItems = dataStore.getListItems();
+		var locations = dataStore.getCurrentLocationItems(this.state.location.name);
 
 		return (
 
@@ -105,7 +108,7 @@ var App = React.createClass({
 				</div>
 				<div className={'row'}>
 					<div className={'col-md-3'}>
-						<SearchBox onSearch={this.searchForAddress} label="Locations" data={listItems}/>
+						<SearchBox onSearch={this.searchForAddress} label='Locations' data={listItems}/>
 						<LocationList locations={this.state.favorites} activeLocation={this.state.location}
 									  onClick={this.searchForAddress} />
 					</div>
