@@ -1,6 +1,8 @@
 import React from 'react';
 import Select from 'react-select';
 
+require('react-select/less/default.less')
+
 var SearchBox = React.createClass({
 	getInitialState () {
 		return {
