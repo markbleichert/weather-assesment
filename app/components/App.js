@@ -1,13 +1,13 @@
 var React = require('react');
 
 var DATA = require('./Data');
-//var localStorage = require('./LocalStorage'); @todo: use this class
 
 var SearchBox = require('./SearchBox');
 var Forecast = require('./Forecast');
 var Map = require('./Map');
 var CurrentLocation = require('./CurrentLocation');
 var LocationList = require('./LocationList');
+var store = require('../stores/FavoritesStore');
 
 
 require('../styles/global.css');
@@ -16,18 +16,8 @@ var App = React.createClass({
 
 	getInitialState(){
 
-		// Extract the favorite locations from local storage
-
-		var favorites = [];
-
-		if(localStorage.favorites){
-			favorites = JSON.parse(localStorage.favorites);
-		}
-
-		// Nobody would get mad if we center it on Paris by default
-
 		return {
-			favorites: favorites,
+			favorites: store.getAll(),
 			location: {
 				name: 'Amsterdam',
 				address: 'Amsterdam, Netherlands',
@@ -41,7 +31,6 @@ var App = React.createClass({
 	},
 
 	toggleFavorite(location){
-
 		if(this.isAddressInFavorites(location)){
 			this.removeFromFavorites(location);
 		}
@@ -53,65 +42,28 @@ var App = React.createClass({
 
 	addToFavorites(location){
 
-		var favorites = this.state.favorites;
+		var favorites = store.getAll();
 
-		favorites.push({
-			location: {
-				name: location.name,
-				address: location.address
-			},
-			timestamp: Date.now()
-		});
+		store.add(location);
 
 		this.setState({
-			favorites: favorites
+			favorites: store.getAll()
 		});
 
-		localStorage.favorites = JSON.stringify(favorites);
+		console.log(store.getAll())
 	},
 
 	removeFromFavorites(location){
+		store.remove(location);
 
-		var favorites = this.state.favorites;
-		var index = -1;
-
-		for(var i = 0; i < favorites.length; i++){
-
-			if(favorites[i].location.address == location.address){
-				index = i;
-				break;
-			}
-
-		}
-
-		// If it was found, remove it from the favorites array
-
-		if(index !== -1){
-
-			favorites.splice(index, 1);
-
-			this.setState({
-				favorites: favorites
-			});
-
-			localStorage.favorites = JSON.stringify(favorites);
-		}
+		this.setState({
+			favorites: store.getAll()
+		});
 
 	},
 
 	isAddressInFavorites(location) {
-
-		var favorites = this.state.favorites;
-
-		for(var i = 0; i < favorites.length; i++){
-
-			if(favorites[i].location.address == location.address){
-				return true;
-			}
-
-		}
-
-		return false;
+		return (store.getByAddress(location.address) !== null);
 	},
 
 	searchForAddress(location_name){
