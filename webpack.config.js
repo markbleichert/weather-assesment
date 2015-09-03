@@ -4,7 +4,9 @@ module.exports = {
 	entry: "./app/components/Main.js",
 	output: {
 		path: 'public',
-		filename: "bundle.js"
+		filename: "bundle.js",
+		// need for webpack-dev-server
+		publicPath: "/public/"
 	},
 	module: {
 		loaders: [
@@ -31,5 +33,7 @@ module.exports = {
 	plugins: [
 		// takes text out of bundle.js and puts it in style.css
 		new ExtractTextPlugin("style.css", { allChunks: true })
-	]
+	],
+
+	devtool: 'source-map'
 };
