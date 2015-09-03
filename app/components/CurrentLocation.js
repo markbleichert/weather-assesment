@@ -1,4 +1,5 @@
 var React = require('react');
+var classNames = require('classnames');
 
 var CurrentLocation = React.createClass({
 
@@ -8,11 +9,10 @@ var CurrentLocation = React.createClass({
 
 	render() {
 
-		var starClassName = 'glyphicon glyphicon-star-empty';
-
-		if (this.props.favorite) {
-			starClassName = 'glyphicon glyphicon-star';
-		}
+		var starClassName = classNames({
+			'glyphicon glyphicon-star-empty': !this.props.favorite,
+			'glyphicon glyphicon-star': this.props.favorite
+		});
 
 		return (
 			<div className="col-xs-12 col-md-6 col-md-offset-3 current-location">
