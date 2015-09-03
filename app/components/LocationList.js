@@ -3,11 +3,11 @@ var LocationItem = require('./LocationItem');
 
 var LocationList = React.createClass({
 
-	render(){
+	render() {
 
 		var self = this;
 
-		var locations = this.props.locations.map(function(l){
+		var locations = this.props.locations.map(function (l) {
 
 			var active = self.props.activeLocation.address == l.location.address;
 
@@ -20,7 +20,7 @@ var LocationList = React.createClass({
 						onClick={self.props.onClick} />
 		});
 
-		if(!locations.length){
+		if (!locations.length) {
 			return null;
 		}
 

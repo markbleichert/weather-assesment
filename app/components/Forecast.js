@@ -5,7 +5,7 @@ var cn = require('classnames');
 require('../styles/Forecast.css');
 
 function inRange(num, rangeStart, rangeEnd) {
-	return (num <= Math.max(rangeStart,rangeEnd) && num >= Math.min(rangeStart,rangeEnd));
+	return (num <= Math.max(rangeStart, rangeEnd) && num >= Math.min(rangeStart, rangeEnd));
 }
 
 var Forecast = React.createClass({
@@ -18,12 +18,12 @@ var Forecast = React.createClass({
 
 		// uses weather-icons from erikflowers.github.io
 		var imageClassName = cn({
-			"daily-img": true,
-			"wi": true,
-			"wi-rain": inRange(probability, 81, 100),
-			"wi-showers": inRange(probability, 50, 80),
-			"wi-day-showers": inRange(probability, 15, 49),
-			"wi-day-sunny": inRange(probability, 0, 14)
+			'daily-img': true,
+			'wi': true,
+			'wi-rain': inRange(probability, 81, 100),
+			'wi-showers': inRange(probability, 50, 80),
+			'wi-day-showers': inRange(probability, 15, 49),
+			'wi-day-sunny': inRange(probability, 0, 14)
 		});
 
 		var itemClassName = cn({
@@ -33,11 +33,11 @@ var Forecast = React.createClass({
 
 		return (
 			<li className={itemClassName}>
-				<div className={"daily-date"}>{day}</div>
+				<div className={'daily-date'}>{day}</div>
 				<span className={imageClassName}></span>
-				<span className={"daily-temp"}>{weather.temperature_max}</span>
-				<span className={"daily-temp min"}>{weather.temperature_min}</span>
-				<span className={"daily-rain"}>Rain {weather.precipitation_probability} %</span>
+				<span className={'daily-temp'}>{weather.temperature_max}</span>
+				<span className={'daily-temp min'}>{weather.temperature_min}</span>
+				<span className={'daily-rain'}>Rain {weather.precipitation_probability} %</span>
 			</li>
 		);
 	},
@@ -49,8 +49,8 @@ var Forecast = React.createClass({
 	render() {
 
 		return (
-			<div className={"tabbed-forecast"}>
-				<ul className={"daily"}>
+			<div className={'tabbed-forecast'}>
+				<ul className={'daily'}>
 					{this.renderChildren()}
 				</ul>
 			</div>

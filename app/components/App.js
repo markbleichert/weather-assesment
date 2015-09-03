@@ -14,7 +14,7 @@ require('../styles/global.less');
 
 var App = React.createClass({
 
-	getInitialState(){
+	getInitialState() {
 
 		return {
 			favorites: store.getAll(),
@@ -30,16 +30,16 @@ var App = React.createClass({
 		};
 	},
 
-	toggleFavorite(location){
-		if(this.isAddressInFavorites(location)){
+	toggleFavorite(location) {
+		if (this.isAddressInFavorites(location)) {
 			this.removeFromFavorites(location);
 		}
-		else{
+		else {
 			this.addToFavorites(location);
 		}
 	},
 
-	addToFavorites(location){
+	addToFavorites(location) {
 
 		var favorites = store.getAll();
 
@@ -50,7 +50,7 @@ var App = React.createClass({
 		});
 	},
 
-	removeFromFavorites(location){
+	removeFromFavorites(location) {
 		store.remove(location);
 
 		this.setState({
@@ -63,7 +63,7 @@ var App = React.createClass({
 		return (store.getByAddress(location.address) !== null);
 	},
 
-	searchForAddress(location_name){
+	searchForAddress(location_name) {
 
 		GMaps.geocode({
 			address: location_name,
@@ -89,30 +89,30 @@ var App = React.createClass({
 
 	},
 
-	render(){
+	render() {
 		var listItems = DATA.getListItems();
 		var locations = DATA.getCurrentLocationItems(this.state.location.name);
 
 		return (
 
 			<div>
-				<div className={"row"}>
-					<div className={"col-md-12"}>
+				<div className={'row'}>
+					<div className={'col-md-12'}>
 						<CurrentLocation location={this.state.location}
 								 favorite={this.isAddressInFavorites(this.state.location)}
 								 onFavoriteToggle={this.toggleFavorite} />
 					</div>
 				</div>
-				<div className={"row"}>
-					<div className={"col-md-3"}>
+				<div className={'row'}>
+					<div className={'col-md-3'}>
 						<SearchBox onSearch={this.searchForAddress} label="Locations" data={listItems}/>
 						<LocationList locations={this.state.favorites} activeLocation={this.state.location}
 									  onClick={this.searchForAddress} />
 					</div>
-					<div className={"col-md-9"}>
+					<div className={'col-md-9'}>
 						<Forecast locations={locations}/>
 						<br/>
-						<div className={"col-md-8"}>
+						<div className={'col-md-8'}>
 							<Map coords={this.state.location.coords} />
 						</div>
 

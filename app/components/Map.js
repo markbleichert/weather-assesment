@@ -2,7 +2,7 @@ var React = require('react');
 
 var Map = React.createClass({
 
-	componentDidMount(){
+	componentDidMount() {
 
 		// Only componentDidMount is called when the component is first added to
 		// the page. This is why we are calling the following method manually.
@@ -11,9 +11,9 @@ var Map = React.createClass({
 		this.componentDidUpdate();
 	},
 
-	componentDidUpdate(){
+	componentDidUpdate() {
 
-		if(this.lastLat == this.props.coords.lat && this.lastLng == this.props.coords.lng){
+		if (this.lastLat == this.props.coords.lat && this.lastLng == this.props.coords.lng) {
 
 			// The map has already been initialized at this address.
 			// Return from this method so that we don't reinitialize it
@@ -40,7 +40,7 @@ var Map = React.createClass({
 		});
 	},
 
-	render(){
+	render() {
 
 		return (
 			<div className="map-holder">

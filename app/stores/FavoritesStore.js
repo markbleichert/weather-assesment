@@ -46,9 +46,9 @@ class FavoritesStore {
 		var favorites = this.getAll();
 		var index = -1;
 
-		for(var i = 0; i < favorites.length; i++){
+		for (var i = 0; i < favorites.length; i++) {
 
-			if(favorites[i].location.address == location.address){
+			if (favorites[i].location.address == location.address) {
 				index = i;
 				break;
 			}
@@ -57,7 +57,7 @@ class FavoritesStore {
 
 		// If it was found, remove it from the favorites array
 
-		if(index !== -1){
+		if (index !== -1) {
 
 			favorites.splice(index, 1);
 

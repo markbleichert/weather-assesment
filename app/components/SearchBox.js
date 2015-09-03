@@ -5,7 +5,7 @@ require('react-select/less/default.less');
 //require('../styles/searchbox.css)
 
 var SearchBox = React.createClass({
-	getInitialState () {
+	getInitialState() {
 		return {
 			searchable: true,
 			disabled: false,
@@ -13,7 +13,7 @@ var SearchBox = React.createClass({
 		};
 	},
 
-	updateValue (newValue) {
+	updateValue(newValue) {
 		// 3rd part callbacks always in try/catch
 		var cb = this.props.onSearch;
 		if (typeof cb == 'function') {
@@ -25,7 +25,7 @@ var SearchBox = React.createClass({
 		}
 	},
 
-	render () {
+	render() {
 		return (
 			<div id="find-a-forecast" className="section">
 				<h2>Find a forecast</h2>

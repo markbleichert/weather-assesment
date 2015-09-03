@@ -2,16 +2,16 @@ var React = require('react');
 
 var LocationItem = React.createClass({
 
-	handleClick(){
+	handleClick() {
 		this.props.onClick(this.props.location.name);
 	},
 
-	render(){
+	render() {
 
-		var cn = "list-group-item";
+		var cn = 'list-group-item';
 
-		if(this.props.active){
-			cn += " active-location";
+		if (this.props.active) {
+			cn += ' active-location';
 		}
 
 		return (
