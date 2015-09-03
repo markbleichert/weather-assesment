@@ -10,6 +10,8 @@ var CurrentLocation = require('./CurrentLocation');
 var LocationList = require('./LocationList');
 
 
+require('../styles/global.css');
+
 var App = React.createClass({
 
 	getInitialState(){
