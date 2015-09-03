@@ -108,7 +108,7 @@
 	display: block;
 	float: left;
 	font-family: Arial, sans-serif;
-	font-size: 13px;
+	font-size: 40px;
 	font-style: normal;
 	font-variant: normal;
 	font-weight: normal;
@@ -120,8 +120,7 @@
 	margin-bottom: 36px;
 	margin-right: 8px;
 	margin-top: 10px;
-	overflow-x: hidden;
-	overflow-y: hidden;
+	overflow: visible;
 	position: relative;
 	text-align: left;
 	width: 55px;
@@ -143,17 +142,4 @@
 
 .active {
 	background-color: #eef6ff;
-}
-
-.rainy {
-	background-image: url("http://static.bbci.co.uk/weather/0.5.346/images/icons/individual_56_icons/en_on_light_bg/12.gif");
-}
-
-.wet {
-	background-image: url("http://static.bbci.co.uk/weather/0.5.346/images/icons/individual_56_icons/en_on_light_bg/15.gif");
-
-}
-
-.sunny-and-wet {
-	background-image: url("http://static.bbci.co.uk/weather/0.5.349/images/icons/individual_56_icons/en_on_light_bg/10.gif");
 }

@@ -1,68 +1,58 @@
 var React = require('react');
+var moment = require('moment');
+var cn = require('classnames');
 
 require('../styles/Forecast.css');
 
-var Weather = React.createClass({
-	render: function() {
+function inRange(num, rangeStart, rangeEnd) {
+	return (num <= Math.max(rangeStart,rangeEnd) && num >= Math.min(rangeStart,rangeEnd));
+}
 
-		// replace this with momnet.js stuff
-		var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-		var date = new Date(this.props.location.datetime.replace(/-/g,"/"));
-		var day = days[date.getDay()];
+var Forecast = React.createClass({
 
-		var itemClassName = "daily-item";
-		var imageClassName = "daily-img";
+	renderWeather(weather, index) {
+		// using moment.js to format ISO date string to day format
+		var day = moment(weather.datetime).format('ddd');
 
-		var probability = this.props.location.precipitation_probability;
+		var probability = weather.precipitation_probability;
 
+		// uses weather-icons from erikflowers.github.io
+		var imageClassName = cn({
+			"daily-img": true,
+			"wi": true,
+			"wi-rain": inRange(probability, 81, 100),
+			"wi-showers": inRange(probability, 50, 80),
+			"wi-day-showers": inRange(probability, 15, 49),
+			"wi-day-sunny": inRange(probability, 0, 14)
+		});
 
-		if (probability >= 85 && probability <= 101) {
-			imageClassName += " wet";
-		} else if (probability >= 50 && probability <= 84.9) {
-			imageClassName += " rainy";
-		} else if (probability > 0 && probability <= 49.9) {
-			imageClassName += " sunny-and-wet";
-		} else /* it is less than 50 */ {
-			imageClassName += " sunny-and-wet";
-		}
-
-		if (this.props.active) {
-			itemClassName += " active";
-		}
+		var itemClassName = cn({
+			'daily-item': true,
+			'active': index === 0
+		});
 
 		return (
 			<li className={itemClassName}>
 				<div className={"daily-date"}>{day}</div>
 				<span className={imageClassName}></span>
-				<span className={"daily-temp"}>{this.props.location.temperature_max}</span>
-				<span className={"daily-temp min"}>{this.props.location.temperature_min}</span>
-				<span className={"daily-rain"}>Rain {this.props.location.precipitation_probability} %</span>
+				<span className={"daily-temp"}>{weather.temperature_max}</span>
+				<span className={"daily-temp min"}>{weather.temperature_min}</span>
+				<span className={"daily-rain"}>Rain {weather.precipitation_probability} %</span>
 			</li>
 		);
-	}
-});
+	},
 
-var Forecast = React.createClass({
+	renderChildren() {
+		return this.props.locations.map(this.renderWeather);
+	},
 
-	render: function() {
-
-		var rows = [];
-		var lastId = null;
-		var id = 0;
-
-		var rows = this.props.locations.map(location => {
-
-			var active = (id == 0)? true : false;
-
-			if (location.station_id !== lastId) {
-				return (<Weather active={active} location={location} key={id++}/>);
-			}
-
-		});
+	render() {
 
 		return (
 			<div className={"tabbed-forecast"}>
-				<ul className={"daily"}>{rows}</ul>
+				<ul className={"daily"}>
+					{this.renderChildren()}
+				</ul>
 			</div>
 		);
 	}
