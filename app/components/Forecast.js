@@ -1,5 +1,7 @@
 var React = require('react');
 
+require('../styles/Forecast.css');
+
 var Weather = React.createClass({
 	render: function() {
 
