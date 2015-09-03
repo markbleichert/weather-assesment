@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "prestart": "npm install",
     "start": "webpack-dev-server --port 3000",
+    "lint": "jscs app/",
+    "lint:fix": "jscs app/ --fix",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -27,6 +30,7 @@
     "style-loader": "^0.12.3",
     "weather-icons": "^1.3.2",
     "webpack": "^1.12.0",
-    "webpack-dev-server": "^1.10.1"
+    "webpack-dev-server": "^1.10.1",
+    "jscs": "~2.1.1"
   }
 }
