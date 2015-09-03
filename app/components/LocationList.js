@@ -28,8 +28,8 @@ var LocationList = React.createClass({
 		}
 
 		return (
-			<div className="col-xs-12 col-md-offset-0">
-				<span className="list-group-item active">Saved Locations</span>
+			<div className='col-xs-12 col-md-offset-0'>
+				<span className='list-group-item active'>Saved Locations</span>
 				{locations}
 			</div>
 		);

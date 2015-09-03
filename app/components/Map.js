@@ -43,9 +43,9 @@ var Map = React.createClass({
 	render() {
 
 		return (
-			<div className="map-holder">
+			<div className='map-holder'>
 				<p>Loading...</p>
-				<div id="map"></div>
+				<div id='map'></div>
 			</div>
 		);
 	}

@@ -18,8 +18,8 @@ var LocationItem = React.createClass({
 		return (
 			<a className={cn} onClick={this.handleClick}>
 				{this.props.location.address}
-				<span className="createdAt">{ this.props.timestamp }</span>
-				<span className="glyphicon glyphicon-menu-right"></span>
+				<span className='createdAt'>{ this.props.timestamp }</span>
+				<span className='glyphicon glyphicon-menu-right'></span>
 			</a>
 		);
 

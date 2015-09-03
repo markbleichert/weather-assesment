@@ -30,4 +30,5 @@ class DataStore {
 		return arr;
 	}
 }
+
 module.exports = new DataStore(require('../fixtures/Data'));
