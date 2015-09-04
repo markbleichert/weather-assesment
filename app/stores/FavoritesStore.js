@@ -68,4 +68,4 @@ class FavoritesStore {
 }
 
 // for now init here !
-module.exports = new FavoritesStore(window.localStorage);
+module.exports = FavoritesStore;

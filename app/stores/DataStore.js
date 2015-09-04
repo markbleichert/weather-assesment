@@ -5,7 +5,7 @@ class DataStore {
 
 	getCurrentLocationItems(location_id) {
 		return this.data.filter(function (obj) {
-			// change naming this is confusing ! place_name == location_id
+
 			if (obj.place_name == location_id) {
 				return (obj);
 			}
@@ -38,4 +38,4 @@ class DataStore {
 	}
 }
 
-module.exports = new DataStore(require('../fixtures/Data'));
+module.exports = DataStore;

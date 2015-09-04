@@ -5,15 +5,17 @@ var Forecast = require('./Forecast');
 var Map = require('./Map');
 var CurrentLocation = require('./CurrentLocation');
 var LocationList = require('./LocationList');
-var store = require('../stores/FavoritesStore');
-var dataStore = require('../stores/DataStore');
-
 
 require('../styles/global.less');
 
 var App = React.createClass({
 
+	propTypes: {
+		stores: React.PropTypes.object
+	},
+
 	getInitialState() {
+		var store = this.props.stores.getStore('FavoritesStore');
 
 		return {
 			favorites: store.getAll(),
@@ -39,6 +41,7 @@ var App = React.createClass({
 	},
 
 	addToFavorites(location) {
+		var store = this.props.stores.getStore('FavoritesStore');
 
 		var favorites = store.getAll();
 
@@ -50,6 +53,8 @@ var App = React.createClass({
 	},
 
 	removeFromFavorites(location) {
+		var store = this.props.stores.getStore('FavoritesStore');
+
 		store.remove(location);
 
 		this.setState({
@@ -59,6 +64,7 @@ var App = React.createClass({
 	},
 
 	isAddressInFavorites(location) {
+		var store = this.props.stores.getStore('FavoritesStore');
 		return (store.getByAddress(location.address) !== null);
 	},
 
@@ -91,6 +97,8 @@ var App = React.createClass({
 	},
 
 	render() {
+
+		var dataStore = this.props.stores.getStore('DataStore');
 
 		// get the necessary data from the datastore
 		var listItems = dataStore.getListItems();
