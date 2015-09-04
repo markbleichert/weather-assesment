@@ -5,20 +5,19 @@ var LocationList = React.createClass({
 
 	render() {
 
-		var self = this;
+		var locations = this.props.locations.map((loc, index) => {
 
-		var locations = this.props.locations.map(function (l) {
-
-			var active = self.props.activeLocation.address == l.location.address;
+			var active = this.props.activeLocation.address == loc.location.address;
 
 			// Passing the onClick callback of this
 			// LocationList to each LocationItem.
 			return (
 				<LocationItem
-					location={l.location}
-					timestamp={l.timestamp}
+					key={index}
+					location={loc.location}
+					timestamp={loc.timestamp}
 					active={active}
-					onClick={self.props.onClick}
+					onClick={this.props.onClick}
 				/>
 			);
 		});
@@ -29,7 +28,7 @@ var LocationList = React.createClass({
 
 		return (
 			<div className='col-xs-12 col-md-offset-0'>
-				<span className='list-group-item active'>Saved Locations</span>
+				<span className='list-group-item active'>Favorite Locations</span>
 				{locations}
 			</div>
 		);

@@ -32,7 +32,7 @@ var Forecast = React.createClass({
 		});
 
 		return (
-			<li className={itemClassName}>
+			<li className={itemClassName} key={index}>
 				<div className={'daily-date'}>{day}</div>
 				<span className={imageClassName}></span>
 				<span className={'daily-temp'}>{weather.temperature_max}</span>

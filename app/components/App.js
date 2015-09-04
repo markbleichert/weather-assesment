@@ -63,6 +63,7 @@ var App = React.createClass({
 
 	},
 
+	//todo: move to store ?
 	isAddressInFavorites(location) {
 		var store = this.props.stores.getStore('FavoritesStore');
 		return (store.getByAddress(location.address) !== null);
