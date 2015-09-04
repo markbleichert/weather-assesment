@@ -1,11 +1,11 @@
 var React = require('react');
-var App = require('./App');
 
-var DataStore = require('../stores/DataStore.js');
-var FavStore = require('../stores/FavoritesStore.js');
-var StoresManager = require('../stores/StoresManager.js');
+var App = require('./components/App');
+var DataStore = require('./stores/DataStore');
+var FavStore = require('./stores/FavoritesStore');
+var StoresManager = require('./stores/StoresManager');
 
-var data = require('../fixtures/Data.js');
+var data = require('./fixtures/data-json');
 
 // configuring stores and using store-manager
 var stores = new StoresManager();
