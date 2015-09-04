@@ -21,7 +21,7 @@ var App = React.createClass({
 			favorites: store.getAll(),
 			location: {
 				name: 'Amsterdam',
-				address: 'Amsterdam, Netherlands',
+				address: 'Rinse Hofstraweg, 1118 Schiphol, Netherlands',
 				coords: {
 					lat: 52.3,
 					lng: 4.766667
