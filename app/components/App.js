@@ -68,32 +68,55 @@ var App = React.createClass({
 		return (store.getByAddress(location.address) !== null);
 	},
 
+	getFormattedStatus(status = 'ERR') {
+		var map = {
+			'ERR': 'Unexpect error occured',
+			'ZERO_RESULTS' : 'No results found',
+			'OK': ''
+		}
+
+		return map[status];
+	},
+
 	searchForAddress(location_name) {
 
-		//TODO: search based longtitude/latitude
-		// 'location': {lat: 40.731, lng: -73.997},
+		// get the location object from the data by name entered in search
+		var dataStore = this.props.stores.getStore('DataStore');
+		var location = dataStore.getLocationByName(location_name);
 
-		GMaps.geocode({
-			address: location_name,
-			callback: (results, status) => {
+		var options = {
+			'location': {
+				'lat': location.latitude,
+				'lng': location.longitude
+			},
+			'callback': (results, status) => {
 
-				if (status !== 'OK') return;
 
-				var latlng = results[0].geometry.location;
+				if (status === 'OK') {
 
-				this.setState({
-					location: {
-						name: location_name,
-						address: results[0].formatted_address,
-						coords: {
-							lat: latlng.lat(),
-							lng: latlng.lng()
+					var latlng = results[0].geometry.location;
+
+					this.setState({
+						searchStatus: this.getFormattedStatus(status),
+						location: {
+							name: location_name,
+							address: results[0].formatted_address,
+							coords: {
+								lat: latlng.lat(),
+								lng: latlng.lng()
+							}
 						}
-					}
-				});
-
+					});
+				} else {
+					// no results found !
+					this.setState({
+						searchStatus: this.getFormattedStatus(status)
+					});
+				}
 			}
-		});
+		};
+
+		GMaps.geocode(options);
 
 	},
 
@@ -117,7 +140,7 @@ var App = React.createClass({
 				</div>
 				<div className={'row'}>
 					<div className={'col-md-3'}>
-						<SearchBox onSearch={this.searchForAddress} label='Locations' data={listItems}/>
+						<SearchBox onSearch={this.searchForAddress} label='Locations' data={listItems} status={this.state.searchStatus}/>
 						<LocationList locations={this.state.favorites} activeLocation={this.state.location}
 									  onClick={this.searchForAddress} />
 					</div>
@@ -127,8 +150,6 @@ var App = React.createClass({
 						<div className={'col-md-8'}>
 							<Map coords={this.state.location.coords} />
 						</div>
-
-
 					</div>
 				</div>
 			</div>

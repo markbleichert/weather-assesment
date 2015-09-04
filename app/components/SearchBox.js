@@ -35,6 +35,7 @@ var SearchBox = React.createClass({
 						disabled={this.state.disabled}
 						onChange={this.updateValue}
 				/>
+				<span>{this.props.status}</span>
 			</div>
 		);
 	}

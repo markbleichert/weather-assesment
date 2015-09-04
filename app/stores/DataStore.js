@@ -3,14 +3,19 @@ class DataStore {
 		this.data = data;
 	}
 
-	getCurrentLocationItems(location_id) {
+	getLocationByName(location_name) {
+		return this.getCurrentLocationItems(location_name)[0];
+	}
+	
+	getCurrentLocationItems(location_name) {
 		return this.data.filter(function (obj) {
 
-			if (obj.place_name == location_id) {
+			if (obj.place_name == location_name) {
 				return (obj);
 			}
 		});
 	}
+
 	getListItems() {
 
 		var uniqueLocations = {};
