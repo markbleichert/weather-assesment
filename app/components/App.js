@@ -71,6 +71,7 @@ var App = React.createClass({
 	searchForAddress(location_name) {
 
 		//TODO: search based longtitude/latitude
+		// 'location': {lat: 40.731, lng: -73.997},
 
 		GMaps.geocode({
 			address: location_name,
