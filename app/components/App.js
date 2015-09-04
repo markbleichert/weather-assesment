@@ -134,23 +134,32 @@ var App = React.createClass({
 			<div>
 				<div className={'row'}>
 					<div className={'col-md-12'}>
-						<CurrentLocation location={this.state.location}
-								 favorite={this.isAddressInFavorites(this.state.location)}
-								 onFavoriteToggle={this.toggleFavorite} />
+
 					</div>
 				</div>
 				<div className={'row'}>
 					<div className={'col-md-3'}>
-						<SearchBox onSearch={this.searchForAddress} label='Locations' data={listItems} status={this.state.searchStatus}/>
-						<LocationList locations={this.state.favorites} activeLocation={this.state.location}
-									  onClick={this.searchForAddress} />
+						<br/>
+						<SearchBox onSearch={this.searchForAddress}
+							label='Locations'
+							data={listItems}
+							status={this.state.searchStatus}/>
+
+						<LocationList locations={this.state.favorites}
+							activeLocation={this.state.location}
+							onClick={this.searchForAddress} />
 					</div>
 					<div className={'col-md-9'}>
+						<CurrentLocation location={this.state.location}
+							favorite={this.isAddressInFavorites(this.state.location)}
+							onFavoriteToggle={this.toggleFavorite} />
+
 						<Forecast locations={locations}/>
+
 						<br/>
-						<div className={'col-md-8'}>
-							<Map coords={this.state.location.coords} />
-						</div>
+
+						<Map coords={this.state.location.coords} />
+
 					</div>
 				</div>
 			</div>

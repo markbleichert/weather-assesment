@@ -49,8 +49,8 @@ var Forecast = React.createClass({
 	render() {
 
 		return (
-			<div className={'tabbed-forecast'}>
-				<ul className={'daily'}>
+			<div className='tabbed-forecast'>
+				<ul className='daily'>
 					{this.renderChildren()}
 				</ul>
 			</div>
