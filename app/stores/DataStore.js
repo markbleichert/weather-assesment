@@ -12,22 +12,29 @@ class DataStore {
 		});
 	}
 	getListItems() {
-		var arr = [];
-		var lastId = null;
 
-		this.data.forEach(function (obj) {
-			if (obj.station_id !== lastId) {
+		var uniqueLocations = {};
 
-				// check if ID property is used ok in react iterator
-				arr.push({
-					id: obj.station_id,
-					value: obj.place_name,
-					label: obj.place_name
-				});
+		return this.data.filter((obj) => {
+
+			var test = (obj.station_id in uniqueLocations);
+
+			// should not depend on data in order
+			// ensure unique locations
+			if (test) {
+				return false
+			} else {
+				uniqueLocations[obj.station_id] = true;
+				return true;
 			}
-			lastId = obj.station_id;
+
+		}).map(obj => {
+
+			return {
+				value: obj.place_name,
+				label: obj.place_name
+			};
 		});
-		return arr;
 	}
 }
 
