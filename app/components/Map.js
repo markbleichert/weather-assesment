@@ -27,19 +27,35 @@ var Map = React.createClass({
 		this.lastLat = this.props.coords.lat;
 		this.lastLng = this.props.coords.lng;
 
-		var map = new GMaps({
-			el: '#map',
-			lat: this.props.coords.lat,
-			lng: this.props.coords.lng,
-			zoom: 10
+		// create the map with our coordinates
+		var map = new google.maps.Map(document.getElementById('map'), {
+			zoom: 10,
+			center: {
+				lat: this.props.coords.lat,
+				lng: this.props.coords.lng,
+			}
+		});
+
+		// build info window content
+		var coords = `${this.lastLat} - ${this.lastLng}`;
+		var contentString = `<div>${coords}</div>`;
+
+		var infowindow = new google.maps.InfoWindow({
+			content: contentString
 		});
 
 		// Adding a marker to the location we are showing
-
-		map.addMarker({
-			lat: this.props.coords.lat,
-			lng: this.props.coords.lng
+		var marker = new google.maps.Marker({
+			position: {
+				lat: this.props.coords.lat,
+				lng: this.props.coords.lng
+			},
+			map: map
 		});
+
+		// open by default
+		infowindow.open(map, marker);
+
 	},
 
 	render() {
