@@ -28,7 +28,7 @@ var SearchBox = React.createClass({
 	render() {
 		return (
 			<div id='find-a-forecast' className='section'>
-				<h2>Find a forecast</h2>
+				<h2>Find weather forecast</h2>
 				<Select ref='stateSelect'
 						options={this.props.data}
 						searchable={this.state.searchable}

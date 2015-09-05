@@ -9,6 +9,7 @@ var Map = React.createClass({
 		// Only componentDidMount is called when the component is first added to
 		// the page. This is why we are calling the following method manually.
 		// This makes sure that our map initialization code is run the first time.
+		// This kind of works like a class contructor ;-)
 
 		this.componentDidUpdate();
 	},
@@ -17,10 +18,9 @@ var Map = React.createClass({
 
 		if (this.lastLat == this.props.coords.lat && this.lastLng == this.props.coords.lng) {
 
-			// The map has already been initialized at this address.
+			// The map has already been initialized at these coordinates.
 			// Return from this method so that we don't reinitialize it
 			// and cause it to flicker.
-
 			return;
 		}
 
@@ -35,6 +35,7 @@ var Map = React.createClass({
 				lng: this.props.coords.lng,
 			}
 		});
+
 
 		// build info window content
 		var coords = `${this.lastLat} - ${this.lastLng}`;

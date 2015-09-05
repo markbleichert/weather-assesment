@@ -23,13 +23,8 @@ var Forecast = React.createClass({
 			'wi-day-sunny': util.inRange(probability, 0, 14)
 		});
 
-		var itemClassName = cn({
-			'daily-item': true,
-			'active': index === 0
-		});
-
 		return (
-			<li className={itemClassName} key={index}>
+			<li className={'daily-item'} key={index}>
 				<div className={'daily-date'}>{day}</div>
 				<span className={imageClassName}></span>
 				<span className={'daily-temp'}>{weather.temperature_max}</span>

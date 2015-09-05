@@ -1,6 +1,7 @@
 var React = require('react');
 var WeatherNavBar = require('./WeatherNavBar');
 var WeatherItem = require('./WeatherItem');
+var moment = require('moment');
 
 require('../../styles/WeatherBox.css');
 
@@ -11,10 +12,6 @@ var WeatherBox = React.createClass({
 		};
 	},
 
-	componentDidUpdate() {
-		//console.log('update weatherbox component');
-	},
-
 	handleClick(location) {
 		this.setState({
 			activeLocation: location
@@ -22,7 +19,8 @@ var WeatherBox = React.createClass({
 	},
 
 	render() {
-
+		console.log('active props location', this.props.activeLocation);
+		console.log('active state location', this.state.activeLocation);
 		return (
 			<div id='weatherbox' className=''>
 				<WeatherNavBar locations={this.props.locations}

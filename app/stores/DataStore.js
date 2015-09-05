@@ -3,10 +3,12 @@ class DataStore {
 		this.data = data;
 	}
 
+	// should not depend on data in order
+	// but for now just get the first one in the array
 	getLocationByName(location_name) {
 		return this.getCurrentLocationItems(location_name)[0];
 	}
-	
+
 	getCurrentLocationItems(location_name) {
 		return this.data.filter(function (obj) {
 
