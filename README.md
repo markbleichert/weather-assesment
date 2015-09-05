@@ -2,7 +2,7 @@
 
 My coding assignment building a weather app with React.js
 
-Try the [deployed app](http://markbleichert.github.io/weather-assement/) or read below hot to run it locally.
+Try the [deployed app](http://markbleichert.github.io/weather-assessment/) or read below hot to run it locally.
 
 
 ## How to run locally
