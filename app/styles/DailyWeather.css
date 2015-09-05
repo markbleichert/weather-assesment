@@ -15,6 +15,7 @@
 .weather-by-day-item {
     width: 350px;
     height: 220px;
+    margin-top: 10px;
     margin-bottom: 10px;
 }
 
@@ -22,12 +23,17 @@ li.disabled{
     display: none;
 }
 
-.weather-location-navigation {
-    width: 620px;
-    height: 60px;
+#weatherbox {
     display: block;
-    margin-bottom: 15px;
-    margin-top: 15px;
+    float: none;
+    width: 400px;
+}
+
+.weather-location-navigation {
+    display: block;
+    float: none;
+    padding: 0px;
+    margin: 0px;
 }
 
 .weather-location-navigation li {
@@ -83,6 +89,6 @@ div.big-date span{
 
 .weather-navbar-item {
     border-radius: 8px;
-    display: inline;
+    display: inline-block;
     margin: 3px;
 }
