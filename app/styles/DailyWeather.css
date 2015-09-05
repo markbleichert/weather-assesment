@@ -1,0 +1,88 @@
+/* List-group-horizontal*/
+
+.list-group-horizontal .list-group-item {
+    display: inline-block;
+    border-radius: 4px;
+}
+.list-group-horizontal {
+    padding-left: 0px;
+}
+
+.active-location {
+    background-color: #EEF6FF;
+}
+
+.weather-by-day-item {
+    width: 350px;
+    height: 220px;
+    margin-bottom: 10px;
+}
+
+li.disabled{
+    display: none;
+}
+
+.weather-location-navigation {
+    width: 620px;
+    height: 60px;
+    display: block;
+    margin-bottom: 15px;
+    margin-top: 15px;
+}
+
+.weather-location-navigation li {
+    margin: 2px;
+}
+
+.weather-daily-img {
+    display: block;
+    float: left;
+    font-size: 80px;
+    overflow: visible;
+    position: relative;
+    width: 120px;
+    height: 110px;
+}
+
+.temperature {
+    border: 0px solid #ddd;
+    margin: 5px;
+}
+
+.temperature.max {
+    font-size: 28px;
+}
+
+.temperature.min {
+    font-size: 22px;
+}
+
+li a {
+    cursor: pointer;
+}
+
+div.big-date {
+    margin-top: 10px;
+    display: block;
+    float: left;
+    clear: both;
+    border-radius: 8px;
+}
+
+div.big-date span{
+    display: block;
+    clear: both;
+}
+.percipitation {
+    display: block;
+    height: 20px;
+    width: 130px;
+    float: left;
+    clear: right;
+}
+
+.weather-navbar-item {
+    border-radius: 8px;
+    display: inline;
+    margin: 3px;
+}

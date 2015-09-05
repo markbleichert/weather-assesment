@@ -2,6 +2,7 @@ var React = require('react');
 
 var SearchBox = require('./SearchBox');
 var Forecast = require('./Forecast');
+var WeatherBox = require('./weatherbox/WeatherBox');
 var Map = require('./Map');
 var CurrentLocation = require('./CurrentLocation');
 var LocationList = require('./LocationList');
@@ -127,7 +128,7 @@ var App = React.createClass({
 
 		// get the necessary data from the datastore
 		var listItems = dataStore.getListItems();
-		var locations = dataStore.getCurrentLocationItems(this.state.location.name);
+		var currentlocationItems = dataStore.getCurrentLocationItems(this.state.location.name);
 
 		return (
 
@@ -154,7 +155,9 @@ var App = React.createClass({
 							favorite={this.isAddressInFavorites(this.state.location)}
 							onFavoriteToggle={this.toggleFavorite} />
 
-						<Forecast locations={locations}/>
+						<WeatherBox locations={currentlocationItems} />
+
+						<Forecast locations={currentlocationItems}/>
 
 						<br/>
 

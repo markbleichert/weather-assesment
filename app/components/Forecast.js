@@ -1,12 +1,9 @@
 var React = require('react');
 var moment = require('moment');
 var cn = require('classnames');
+var util = require('../util/util');
 
 require('../styles/Forecast.css');
-
-function inRange(num, rangeStart, rangeEnd) {
-	return (num <= Math.max(rangeStart, rangeEnd) && num >= Math.min(rangeStart, rangeEnd));
-}
 
 var Forecast = React.createClass({
 
@@ -20,10 +17,10 @@ var Forecast = React.createClass({
 		var imageClassName = cn({
 			'daily-img': true,
 			'wi': true,
-			'wi-rain': inRange(probability, 81, 100),
-			'wi-showers': inRange(probability, 50, 80),
-			'wi-day-showers': inRange(probability, 15, 49),
-			'wi-day-sunny': inRange(probability, 0, 14)
+			'wi-rain': util.inRange(probability, 81, 100),
+			'wi-showers': util.inRange(probability, 50, 80),
+			'wi-day-showers': util.inRange(probability, 15, 49),
+			'wi-day-sunny': util.inRange(probability, 0, 14)
 		});
 
 		var itemClassName = cn({
