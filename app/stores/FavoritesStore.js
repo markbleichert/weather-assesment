@@ -9,6 +9,10 @@ class FavoritesStore {
 		return JSON.parse(this.localStorage.getItem('favorites')) || [];
 	}
 
+	isAddressInFavorites(address) {
+		return (this.getByAddress(address) !== null);
+	}
+
 	getByAddress(address) {
 		var favorites = this.getAll();
 		var result = null;
@@ -30,15 +34,17 @@ class FavoritesStore {
 	add(location) {
 		var favorites = this.getAll();
 
-		favorites.push({
-			location: {
-				name: location.name,
-				address: location.address
-			},
-			timestamp: Date.now()
-		});
+		if (!this.isAddressInFavorites(location.address)) {
+			favorites.push({
+				location: {
+					name: location.name,
+					address: location.address
+				},
+				timestamp: Date.now()
+			});
 
-		this.updateStorage(favorites);
+			this.updateStorage(favorites);
+		}
 	}
 
 	remove(location) {
