@@ -7,7 +7,7 @@ Try the [deployed app](http://markbleichert.github.io/weather-assement/) or read
 
 ## How to run locally
 
-First checkout the repository (`$ https://github.com/markbleichert/weather-assesment.git`) or download it as a [ZIP file](https://github.com/markbleichert/weather-assesment/archive/master.zip).
+First checkout the repository (`$ git clone https://github.com/markbleichert/weather-assesment.git`) or download it as a [ZIP file](https://github.com/markbleichert/weather-assesment/archive/master.zip).
 
 Then install dependencies:
 
@@ -24,6 +24,23 @@ $ npm start
 You can now run the app on [http://localhost:3000]
 
 
+## How to run build version
+
+Check out the repository and run npm install.
+
+Then build resources with webpack:
+
+```
+$ webpack
+```
+
+And open in your browser:
+
+```
+$ open index.html
+```
+
+
 ## What’s inside
 
 ### App
@@ -36,13 +53,13 @@ You can now run the app on [http://localhost:3000]
 
 ### Styles
 
-* [Bootswatch](https://bootswatch.com/) - bootrap css theme.
+* [Bootswatch](https://bootswatch.com/) - bootstrap css theme.
 * [Weather-icons](https://erikflowers.github.io/weather-icons/)
 
 ### Build
 
 * [Webpack](http://webpack.github.io/).
-* [Babel](http://babeljs.io/) (as a [Webpack loader](https://github.com/babel/babel-loader)) — ES6/JSX trasformation.
+* [Babel](http://babeljs.io/) (as a [Webpack loader](https://github.com/babel/babel-loader)) — ES6/JSX transformation.
 
 ### Debugging
 
