@@ -2,7 +2,7 @@ var React = require('react');
 var Select = require('react-select');
 
 require('react-select/less/default.less');
-//require('../styles/searchbox.css)
+require('../styles/SearchBox.css');
 
 var SearchBox = React.createClass({
 	getInitialState() {
@@ -14,7 +14,7 @@ var SearchBox = React.createClass({
 	},
 
 	updateValue(newValue) {
-		// 3rd part callbacks always in try/catch
+		// good practice to put 3rd part callbacks in try/catch
 		var cb = this.props.onSearch;
 		if (typeof cb == 'function') {
 			try {
@@ -40,6 +40,5 @@ var SearchBox = React.createClass({
 		);
 	}
 });
-
 
 module.exports = SearchBox;

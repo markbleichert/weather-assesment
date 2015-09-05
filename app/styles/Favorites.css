@@ -1,0 +1,10 @@
+#favorites-box {
+    clear: both;
+}
+
+.glyphicon-menu-right {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    margin-top: -9px;
+}

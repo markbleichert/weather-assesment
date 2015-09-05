@@ -5,7 +5,7 @@ var Forecast = require('./Forecast');
 var WeatherBox = require('./weatherbox/WeatherBox');
 var Map = require('./Map');
 var CurrentLocation = require('./CurrentLocation');
-var LocationList = require('./LocationList');
+var FavoritesList = require('./favorites/FavoritesList');
 
 require('../styles/global.less');
 
@@ -146,7 +146,7 @@ var App = React.createClass({
 							data={listItems}
 							status={this.state.searchStatus}/>
 
-						<LocationList locations={this.state.favorites}
+						<FavoritesList locations={this.state.favorites}
 							activeLocation={this.state.location}
 							onClick={this.searchForAddress} />
 					</div>

@@ -1,6 +1,8 @@
 var React = require('react');
 var classNames = require('classnames');
 
+require('../styles/CurrentLocation.css');
+
 var CurrentLocation = React.createClass({
 
 	toggleFavorite() {

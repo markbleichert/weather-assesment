@@ -1,6 +1,6 @@
 var React = require('react');
 
-var LocationItem = React.createClass({
+var FavoritesItem = React.createClass({
 
 	handleClick() {
 		// TODO: catch error
@@ -26,4 +26,4 @@ var LocationItem = React.createClass({
 
 });
 
-module.exports = LocationItem;
+module.exports = FavoritesItem;

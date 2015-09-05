@@ -14,9 +14,9 @@
 
 .weather-by-day-item {
     width: 350px;
-    height: 220px;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    height: 230px;
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 li.disabled{

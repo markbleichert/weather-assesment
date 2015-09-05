@@ -1,0 +1,13 @@
+#find-a-forecast {
+    clear: both;
+    min-height: 100px;
+}
+
+#find-a-forecast h2 {
+    font-size: 24px;
+    font-weight: bold;
+    height: 28px;
+    letter-spacing: -1px;
+    line-height: 28px;
+    padding: 2px;
+}

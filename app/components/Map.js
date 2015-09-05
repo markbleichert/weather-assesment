@@ -1,5 +1,7 @@
 var React = require('react');
 
+require('../styles/Map.css');
+
 var Map = React.createClass({
 
 	componentDidMount() {
@@ -17,7 +19,7 @@ var Map = React.createClass({
 
 			// The map has already been initialized at this address.
 			// Return from this method so that we don't reinitialize it
-			// (and cause it to flicker).
+			// and cause it to flicker.
 
 			return;
 		}

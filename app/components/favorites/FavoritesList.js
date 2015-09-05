@@ -1,7 +1,9 @@
 var React = require('react');
-var LocationItem = require('./LocationItem');
+var FavoritesItem = require('./FavoritesItem');
 
-var LocationList = React.createClass({
+require('../../styles/Favorites.css')
+
+var FavoritesList = React.createClass({
 
 	render() {
 
@@ -10,9 +12,9 @@ var LocationList = React.createClass({
 			var active = this.props.activeLocation.address == loc.location.address;
 
 			// Passing the onClick callback of this
-			// LocationList to each LocationItem.
+			// FavoritesList to each FavoritesItem.
 			return (
-				<LocationItem
+				<FavoritesItem
 					key={index}
 					location={loc.location}
 					timestamp={loc.timestamp}
@@ -32,9 +34,7 @@ var LocationList = React.createClass({
 				{locations}
 			</div>
 		);
-
 	}
-
 });
 
-module.exports = LocationList;
+module.exports = FavoritesList;

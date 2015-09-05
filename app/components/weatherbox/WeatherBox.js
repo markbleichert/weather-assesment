@@ -11,6 +11,10 @@ var WeatherBox = React.createClass({
 		};
 	},
 
+	componentDidUpdate() {
+		//console.log('update weatherbox component');
+	},
+
 	handleClick(location) {
 		this.setState({
 			activeLocation: location
