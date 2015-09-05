@@ -168,6 +168,7 @@ var App = React.createClass({
 						</div>
 						<div className={'row'}>
 							<div className={'col-md-12'}>
+								<h4>5 day forecast</h4>
 								<Forecast locations={currentlocationItems}/>
 							</div>
 						</div>

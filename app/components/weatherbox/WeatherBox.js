@@ -2,7 +2,7 @@ var React = require('react');
 var WeatherNavBar = require('./WeatherNavBar');
 var WeatherItem = require('./WeatherItem');
 
-require('../../styles/DailyWeather.css');
+require('../../styles/WeatherBox.css');
 
 var WeatherBox = React.createClass({
 	getInitialState() {
