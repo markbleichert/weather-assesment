@@ -28,7 +28,3 @@ node_modules
 
 # IDE config
 .idea
-
-# remove build folder stuff
-public/bundle.js
-public/style.css
