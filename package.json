@@ -8,7 +8,7 @@
     "start": "webpack-dev-server --port 3000",
     "lint": "jscs app/",
     "lint:fix": "jscs app/ --fix",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "webpack"
   },
   "author": "",
   "license": "ISC",
