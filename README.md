@@ -24,7 +24,7 @@ $ npm start
 You can now run the app on [http://localhost:3000]
 
 
-## How to run build version
+## How to run compiled build version
 
 Check out the repository and run 
 
