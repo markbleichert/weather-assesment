@@ -4,6 +4,9 @@ var cn = require('classnames');
 var Util = require('../../util/util');
 
 var WeatherItem = React.createClass({
+	propTypes: {
+		currentItem: React.PropTypes.object
+	},
 
 	render() {
 

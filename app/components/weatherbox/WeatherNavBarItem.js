@@ -4,6 +4,12 @@ var cn = require('classnames');
 
 var WeatherNavBarItem = React.createClass({
 
+	propTypes: {
+		location: React.PropTypes.object.isRequired,
+		onClick: React.PropTypes.func.isRequired,
+		active: React.PropTypes.bool
+	},
+
 	handleClick() {
 		this.props.onClick(this.props.location);
 	},

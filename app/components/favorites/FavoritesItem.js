@@ -9,7 +9,6 @@ var FavoritesItem = React.createClass({
 	},
 
 	handleClick() {
-		// TODO: catch error
 		this.props.onClick(this.props.location.name);
 	},
 

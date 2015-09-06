@@ -6,6 +6,12 @@ var moment = require('moment');
 require('../../styles/WeatherBox.css');
 
 var WeatherBox = React.createClass({
+
+	propTypes: {
+		locations: React.PropTypes.arrayOf(React.PropTypes.object).isRequired,
+		activeLocation: React.PropTypes.object.isRequired
+	},
+
 	getInitialState() {
 		return {
 			activeLocation: this.props.locations[0]

@@ -4,6 +4,12 @@ var moment = require('moment');
 
 var WeatherNavBar = React.createClass({
 
+	propTypes: {
+		location: React.PropTypes.arrayOf(React.PropTypes.object),
+		onClick: React.PropTypes.func.isRequired,
+		activeLocation: React.PropTypes.object
+	},
+
 	render() {
 
 		var weatherNavBarItems = this.props.locations.map((loc, index) => {
