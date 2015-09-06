@@ -1,6 +1,7 @@
 #find-a-forecast {
     clear: both;
-    min-height: 100px;
+    min-height: 120px;
+    margin-top: 25px;
 }
 
 #find-a-forecast h2 {
@@ -10,4 +11,10 @@
     letter-spacing: -1px;
     line-height: 28px;
     padding: 2px;
+}
+
+#find-a-forecast span.status {
+    line-height: 28px;
+    font-size: 15px;
+    color: red;
 }

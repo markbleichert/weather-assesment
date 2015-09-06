@@ -67,17 +67,27 @@ li a {
     cursor: pointer;
 }
 
-div.big-date {
+.weather-by-day-item div.big-date {
     margin-top: 10px;
     display: block;
     float: left;
     clear: both;
+    border: 1px solid #ecf0f1;
     border-radius: 8px;
+    padding: 10px;
 }
 
-div.big-date span{
+.weather-by-day-item div.big-date span.small {
     display: block;
     clear: both;
+    font-size: 12px;
+}
+
+.weather-by-day-item div.big-date span.big {
+    display: block;
+    clear: both;
+    font-size: 18px;
+    font-weight: bold;
 }
 .percipitation {
     display: block;
@@ -90,5 +100,33 @@ div.big-date span{
 .weather-navbar-item {
     border-radius: 8px;
     display: inline-block;
-    margin: 3px;
+    margin: 4px;
+    padding: 0px;
 }
+
+.weather-navbar-item.list-group-item {
+    padding-left: 15px;
+    padding-right: 15px;
+    pading-top: 2px;
+    pading-bottom: 1px;
+}
+
+.weather-navbar-item div.big-date {
+    padding: 0px;
+    margin: 0px;
+}
+
+.weather-navbar-item div.big-date span.small {
+    display: block;
+    clear: both;
+    font-size: 11px;
+}
+
+.weather-navbar-item div.big-date span.big {
+    display: block;
+    clear: both;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+

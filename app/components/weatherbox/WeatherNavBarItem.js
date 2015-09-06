@@ -1,6 +1,7 @@
 var React = require('react');
 var moment = require('moment');
 var cn = require('classnames');
+var DateBox = require('./DateBox');
 
 var WeatherNavBarItem = React.createClass({
 
@@ -22,18 +23,15 @@ var WeatherNavBarItem = React.createClass({
 	},
 
 	render() {
-
-			var formattedDate = moment(this.props.location.datetime).format('ddd');
-
-			var itemClassNames = cn({
-				'list-group-item': true,
-				'weather-navbar-item': true,
-				'active-location': this.props.active
-			});
+		var itemClassNames = cn({
+			'list-group-item': true,
+			'weather-navbar-item': true,
+			'active-location': this.props.active
+		});
 
 		return (
 			<a className={itemClassNames} onClick={this.handleClick}>
-				{formattedDate}
+				<DateBox datetime={this.props.location.datetime} />
 			</a>
 		);
 
