@@ -165,7 +165,9 @@ var App = React.createClass({
 									locations={currentlocationItems} />
 							</div>
 							<div className={'col-md-7'}>
-								<Map coords={this.state.location.coords} />
+								<Map
+									coords={this.state.location.coords}
+									address={this.state.location.address} />
 							</div>
 						</div>
 						<div className={'row'}>

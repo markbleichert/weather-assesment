@@ -23,7 +23,7 @@ var FavoritesItem = React.createClass({
 
 		return (
 			<a className={cn} onClick={this.handleClick}>
-				{this.props.location.address}
+				{this.props.location.name}
 				<span className='glyphicon glyphicon-menu-right'></span>
 			</a>
 		);

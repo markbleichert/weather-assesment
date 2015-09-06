@@ -5,7 +5,15 @@ require('../styles/Map.css');
 var Map = React.createClass({
 
 	propTypes: {
+		address: React.PropTypes.string,
 		coords: React.PropTypes.object
+	},
+
+	getDefaultProps: function() {
+		return {
+			address: '',
+			coords: {}
+		};
 	},
 
 	componentDidMount() {
@@ -36,7 +44,7 @@ var Map = React.createClass({
 
 		// create the map with our coordinates
 		var map = new google.maps.Map(mapDomElement, {
-			zoom: 10,
+			zoom: 12,
 			center: {
 				lat: this.props.coords.lat,
 				lng: this.props.coords.lng,
@@ -45,8 +53,7 @@ var Map = React.createClass({
 
 
 		// build info window content
-		var coords = `${this.lastLat} - ${this.lastLng}`;
-		var contentString = `<div>${coords}</div>`;
+		var contentString = `<div class="info">${this.props.address}</div>`;
 
 		var infowindow = new google.maps.InfoWindow({
 			content: contentString

@@ -22,7 +22,10 @@ var CurrentLocation = React.createClass({
 
 		return (
 			<div className='current-location'>
-				<h4 id='save-location'>{this.props.location.address}</h4>
+				<h4 className='save-location'>
+					<span className='title-prefix'>weather</span>
+					<span>{this.props.location.name}</span>
+				</h4>
 				<span className={starClassName} onClick={this.toggleFavorite} aria-hidden='true'></span>
 			</div>
 		);
