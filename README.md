@@ -41,7 +41,7 @@ $ npm install.
 Then build resources with webpack:
 
 ```bash
-$ webpack
+$ npm run compile
 ```
 
 And open in your browser:
