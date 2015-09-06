@@ -14,7 +14,7 @@
   "fileExtensions": [".js", ".jsx"],
   "excludeFiles": [
     "./node_modules/**/*",
-	"./app/fixtures/Data.js"
+	"./app/fixtures/data-json.js"
   ],
 
   // rules (http://jscs.info/rules)
