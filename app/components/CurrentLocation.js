@@ -9,6 +9,12 @@ var CurrentLocation = React.createClass({
 		location: React.PropTypes.object
 	},
 
+	getDefaultProps: function() {
+		return {
+			location: {}
+		};
+	},
+
 	toggleFavorite() {
 		this.props.onFavoriteToggle(this.props.location);
 	},
@@ -24,7 +30,7 @@ var CurrentLocation = React.createClass({
 		return (
 			<div className='current-location'>
 				<h4 className='save-location'>
-					<span className='title-prefix'>weather</span>
+					<span className='title-prefix'>daily weather</span>
 					<span>{this.props.location.name}</span>
 				</h4>
 				<span className={starClassName} onClick={this.toggleFavorite} aria-hidden='true'></span>

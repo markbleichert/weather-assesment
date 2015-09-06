@@ -11,6 +11,13 @@ var FavoritesList = React.createClass({
 		activeLocation: React.PropTypes.object
 	},
 
+	getDefaultProps: function() {
+		return {
+			locations: [],
+			activeLocation: {}
+		};
+	},
+
 	render() {
 
 		var locations = this.props.locations.map((loc, index) => {

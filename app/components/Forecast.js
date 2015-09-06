@@ -11,6 +11,12 @@ var Forecast = React.createClass({
 		locations: React.PropTypes.arrayOf(React.PropTypes.object)
 	},
 
+	getDefaultProps: function() {
+		return {
+			locations: []
+		};
+	},
+
 	renderWeather(weather, index) {
 		// using moment.js to format ISO date string to day format
 		var day = moment(weather.datetime).format('ddd');

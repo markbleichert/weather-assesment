@@ -12,6 +12,13 @@ var WeatherBox = React.createClass({
 		activeLocation: React.PropTypes.object.isRequired
 	},
 
+	getDefaultProps: function() {
+		return {
+			locations: [],
+			activeLocation: {}
+		};
+	},
+
 	getInitialState() {
 		return {
 			activeLocation: this.props.locations[0]

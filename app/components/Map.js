@@ -44,7 +44,8 @@ var Map = React.createClass({
 
 		// create the map with our coordinates
 		var map = new google.maps.Map(mapDomElement, {
-			zoom: 12,
+			zoom: 10,
+			mapTypeControl: false,
 			center: {
 				lat: this.props.coords.lat,
 				lng: this.props.coords.lng,

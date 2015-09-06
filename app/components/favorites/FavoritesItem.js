@@ -9,6 +9,13 @@ var FavoritesItem = React.createClass({
 		active: React.PropTypes.bool
 	},
 
+	getDefaultProps: function() {
+		return {
+			location: {},
+			active: false
+		};
+	},
+
 	handleClick() {
 		this.props.onClick(this.props.location.name);
 	},
