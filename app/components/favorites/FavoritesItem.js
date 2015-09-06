@@ -1,4 +1,5 @@
 var React = require('react');
+var classNames = require('classnames');
 
 var FavoritesItem = React.createClass({
 
@@ -14,14 +15,13 @@ var FavoritesItem = React.createClass({
 
 	render() {
 
-		var cn = 'list-group-item';
-
-		if (this.props.active) {
-			cn += ' active-location';
-		}
+		var itemClassNames = classNames({
+			'list-group-item': true,
+			'active-location': this.props.active
+		});
 
 		return (
-			<a className={cn} onClick={this.handleClick}>
+			<a className={itemClassNames} onClick={this.handleClick}>
 				{this.props.location.name}
 				<span className='glyphicon glyphicon-menu-right'></span>
 			</a>

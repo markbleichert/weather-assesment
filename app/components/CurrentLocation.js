@@ -16,8 +16,9 @@ var CurrentLocation = React.createClass({
 	render() {
 
 		var starClassName = classNames({
-			'glyphicon glyphicon-star-empty': !this.props.favorite,
-			'glyphicon glyphicon-star': this.props.favorite
+			'glyphicon': true,
+			'glyphicon-star-empty': !this.props.favorite,
+			'glyphicon-star': this.props.favorite
 		});
 
 		return (
