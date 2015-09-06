@@ -31,8 +31,11 @@ var Map = React.createClass({
 		this.lastLat = this.props.coords.lat;
 		this.lastLng = this.props.coords.lng;
 
+		// get the map dom element
+		var mapDomElement = React.findDOMNode(this.refs.map)
+
 		// create the map with our coordinates
-		var map = new google.maps.Map(document.getElementById('map'), {
+		var map = new google.maps.Map(mapDomElement, {
 			zoom: 10,
 			center: {
 				lat: this.props.coords.lat,
@@ -64,11 +67,10 @@ var Map = React.createClass({
 	},
 
 	render() {
-
 		return (
 			<div className='map-holder'>
 				<p>Loading...</p>
-				<div id='map'></div>
+				<div ref='map' className='map'></div>
 			</div>
 		);
 	}
