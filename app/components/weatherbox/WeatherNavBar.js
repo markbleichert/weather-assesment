@@ -10,7 +10,7 @@ var WeatherNavBar = React.createClass({
 		activeLocation: React.PropTypes.object
 	},
 
-	getDefaultProps: function() {
+	getDefaultProps() {
 		return {
 			locations: [],
 			activeLocation: {}

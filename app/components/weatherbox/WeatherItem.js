@@ -10,7 +10,7 @@ var WeatherItem = React.createClass({
 		currentItem: React.PropTypes.object
 	},
 
-	getDefaultProps: function() {
+	getDefaultProps() {
 		return {
 			currentItem: {}
 		};

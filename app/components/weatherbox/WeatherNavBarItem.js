@@ -11,7 +11,7 @@ var WeatherNavBarItem = React.createClass({
 		active: React.PropTypes.bool
 	},
 
-	getDefaultProps: function() {
+	getDefaultProps() {
 		return {
 			location: {},
 			active: false

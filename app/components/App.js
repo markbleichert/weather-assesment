@@ -73,7 +73,7 @@ var App = React.createClass({
 	getFormattedStatus(status = 'ERR') {
 		var map = {
 			'ERR': 'Unexpect error occured',
-			'ZERO_RESULTS' : 'No results found',
+			'ZERO_RESULTS': 'No results found',
 			'OK': ''
 		}
 

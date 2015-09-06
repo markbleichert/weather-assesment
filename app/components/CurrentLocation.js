@@ -9,7 +9,7 @@ var CurrentLocation = React.createClass({
 		location: React.PropTypes.object
 	},
 
-	getDefaultProps: function() {
+	getDefaultProps() {
 		return {
 			location: {}
 		};

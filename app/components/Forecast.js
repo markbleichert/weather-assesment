@@ -11,7 +11,7 @@ var Forecast = React.createClass({
 		locations: React.PropTypes.arrayOf(React.PropTypes.object)
 	},
 
-	getDefaultProps: function() {
+	getDefaultProps() {
 		return {
 			locations: []
 		};

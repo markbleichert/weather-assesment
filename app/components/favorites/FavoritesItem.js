@@ -9,7 +9,7 @@ var FavoritesItem = React.createClass({
 		active: React.PropTypes.bool
 	},
 
-	getDefaultProps: function() {
+	getDefaultProps: function () {
 		return {
 			location: {},
 			active: false

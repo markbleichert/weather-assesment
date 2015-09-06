@@ -10,7 +10,7 @@ var DateBox = React.createClass({
 		dayFormat: React.PropTypes.string
 	},
 
-	getDefaultProps: function() {
+	getDefaultProps() {
 		return {
 			dateTime: {},
 			dayFormat: 'ddd'

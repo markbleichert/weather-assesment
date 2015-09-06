@@ -12,7 +12,7 @@ var SearchBox = React.createClass({
 		onSearch: React.PropTypes.func.isRequired
 	},
 
-	getDefaultProps: function() {
+	getDefaultProps() {
 		return {
 			data: [],
 			status: ''

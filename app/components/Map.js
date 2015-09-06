@@ -9,7 +9,7 @@ var Map = React.createClass({
 		coords: React.PropTypes.object
 	},
 
-	getDefaultProps: function() {
+	getDefaultProps() {
 		return {
 			address: '',
 			coords: {}
@@ -48,7 +48,7 @@ var Map = React.createClass({
 			mapTypeControl: false,
 			center: {
 				lat: this.props.coords.lat,
-				lng: this.props.coords.lng,
+				lng: this.props.coords.lng
 			}
 		});
 
