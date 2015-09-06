@@ -26,17 +26,27 @@ You can now run the app on [http://localhost:3000]
 
 ## How to run build version
 
-Check out the repository and run npm install.
+Check out the repository and run 
+
+```bash
+$ git clone https://github.com/markbleichert/weather-assesment.git`
+```
+
+Then install dependencies:
+
+```bash
+$ npm install.
+```
 
 Then build resources with webpack:
 
-```
+```bash
 $ webpack
 ```
 
 And open in your browser:
 
-```
+```bash
 $ open index.html
 ```
 
