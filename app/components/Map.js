@@ -4,6 +4,10 @@ require('../styles/Map.css');
 
 var Map = React.createClass({
 
+	propTypes: {
+		coords: React.PropTypes.object
+	},
+
 	componentDidMount() {
 
 		// Only componentDidMount is called when the component is first added to

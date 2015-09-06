@@ -5,6 +5,13 @@ require('react-select/less/default.less');
 require('../styles/SearchBox.css');
 
 var SearchBox = React.createClass({
+
+	propTypes: {
+		data: React.PropTypes.arrayOf(React.PropTypes.object),
+		status: React.PropTypes.string,
+		onSearch: React.PropTypes.func.isRequired
+	},
+
 	getInitialState() {
 		return {
 			searchable: true,

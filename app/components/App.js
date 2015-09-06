@@ -16,6 +16,7 @@ var App = React.createClass({
 	},
 
 	getInitialState() {
+
 		var store = this.props.stores.getStore('FavoritesStore');
 
 		return {

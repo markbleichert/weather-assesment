@@ -7,6 +7,10 @@ require('../styles/Forecast.css');
 
 var Forecast = React.createClass({
 
+	propTypes: {
+		locations: React.PropTypes.arrayOf(React.PropTypes.object)
+	},
+
 	renderWeather(weather, index) {
 		// using moment.js to format ISO date string to day format
 		var day = moment(weather.datetime).format('ddd');

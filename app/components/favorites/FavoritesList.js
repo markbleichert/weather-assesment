@@ -5,6 +5,12 @@ require('../../styles/Favorites.css')
 
 var FavoritesList = React.createClass({
 
+	propTypes: {
+		locations: React.PropTypes.arrayOf(React.PropTypes.object),
+		onClick: React.PropTypes.func.isRequired,
+		activeLocation: React.PropTypes.object
+	},
+
 	render() {
 
 		var locations = this.props.locations.map((loc, index) => {
@@ -17,7 +23,6 @@ var FavoritesList = React.createClass({
 				<FavoritesItem
 					key={index}
 					location={loc.location}
-					timestamp={loc.timestamp}
 					active={active}
 					onClick={this.props.onClick}
 				/>

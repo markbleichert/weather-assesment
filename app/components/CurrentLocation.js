@@ -5,6 +5,10 @@ require('../styles/CurrentLocation.css');
 
 var CurrentLocation = React.createClass({
 
+	propTypes: {
+		location: React.PropTypes.object
+	},
+
 	toggleFavorite() {
 		this.props.onFavoriteToggle(this.props.location);
 	},
