@@ -20,7 +20,6 @@
 
 	direction: ltr;
 	display: block;
-	height: 120px;
 	left: 0px;
 	line-height: 16px;
 	list-style-image: none;
@@ -44,7 +43,7 @@
 	direction: ltr;
 	display: block;
 	float: left;
-	height: 120px;
+
 	line-height: 16px;
 	list-style-image: none;
 	list-style-position: outside;

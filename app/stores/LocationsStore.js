@@ -1,4 +1,4 @@
-class DataStore {
+class LocationsStore {
 	constructor(data) {
 		this.data = data;
 	}
@@ -45,4 +45,4 @@ class DataStore {
 	}
 }
 
-module.exports = DataStore;
+module.exports = LocationsStore;

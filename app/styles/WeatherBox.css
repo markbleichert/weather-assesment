@@ -13,7 +13,6 @@
 }
 
 .weather-by-day-item {
-    width: 350px;
     height: 230px;
     margin-top: 20px;
     margin-bottom: 20px;
@@ -26,7 +25,7 @@ li.disabled{
 #weatherbox {
     display: block;
     float: none;
-    width: 400px;
+    margin-bottom: 20px;
 }
 
 .weather-location-navigation {

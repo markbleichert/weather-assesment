@@ -3,14 +3,11 @@
 }
 
 .map {
-    max-width: 450px;
     height: 320px;
     margin: 0 auto;
 }
 
 .map-holder {
-    max-width: 500px;
-    height: 300px;
     background-color: #FCFCFC;
     position: relative;
     border-radius: 2px;
@@ -22,7 +19,6 @@
     height: 22px;
     left: 50%;
     top: 50%;
-    margin: -11px auto 0 -42px;
     font-size: 20px;
     color: #969FA8;
 }

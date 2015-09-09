@@ -1,30 +1,30 @@
 var React = require('react');
 
 var App = require('./components/App');
-var DataStore = require('./stores/DataStore');
-var FavStore = require('./stores/FavoritesStore');
+var LocationsStore = require('./stores/LocationsStore');
+var FavoritesStore = require('./stores/FavoritesStore');
+var FavoritesResource = require('./stores/FavoritesResource');
 var StoresManager = require('./stores/StoresManager');
-
 var data = require('./fixtures/data-json');
 
-// configuring stores and using store-manager
-var stores = new StoresManager();
 
-stores.addStore('DataStore', new DataStore(data));
-stores.addStore('FavoritesStore', new FavStore(window.localStorage));
+// setup locations store
+var locationsStore = new LocationsStore(data);
 
+// set up favorite store with local storage impl.
+var favoritesStoreImpl = new FavoritesResource(window.localStorage);
+var favoritesStore = new FavoritesStore(favoritesStoreImpl);
 
-// set up init data for favorites
-var favStore = stores.getStore('FavoritesStore');
-
-favStore.add({'name':'Amsterdam',
+// add some initial favorites
+favoritesStore.add({'name':'Amsterdam',
 	'address':'Rinse Hofstraweg, 1118 Schiphol, Netherlands'});
-favStore.add({'name':'Groningen',
+favoritesStore.add({'name':'Groningen',
 	'address':'Het Hout 151-152, 9723 Groningen, Netherlands'});
-favStore.add({'name':'Maastricht',
+favoritesStore.add({'name':'Maastricht',
 	'address':'Horsterweg 15, 6199 AC Maastricht-Airport, Netherlands'});
 
+// pass configured stores to React and get started
 React.render(
-	<App stores={stores}/>,
+	<App favorites={favoritesStore} locations={locationsStore} />,
 	document.getElementById('main')
 );

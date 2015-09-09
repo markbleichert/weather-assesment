@@ -1,77 +1,61 @@
+var Constants = require('../constants/Constants');
+var Dispatcher = require('../dispatchers/Dispatcher');
+var EventEmitter = require('events').EventEmitter;
 
-class FavoritesStore {
-	constructor() {
-		this.localStorage = localStorage;
-
+class FavoritesStore extends EventEmitter {
+	constructor(resource) {
+		super();
+		this.resource = resource;
+		this.registerDispatcher();
+	}
+	emitChange() {
+		this.emit('change');
 	}
 
-	getAll() {
-		return JSON.parse(this.localStorage.getItem('favorites')) || [];
+	addChangeListener(callback) {
+		this.on('change', callback);
 	}
 
-	isAddressInFavorites(address) {
-		return (this.getByAddress(address) !== null);
-	}
-
-	getByAddress(address) {
-		var favorites = this.getAll();
-		var result = null;
-
-		favorites.some((loc) => {
-			if (loc.location.address == address) {
-				result = loc;
-				return true;
-			}
-		});
-
-		return result;
-	}
-
-	updateStorage(favorites) {
-		this.localStorage.setItem('favorites', JSON.stringify(favorites));
+	removeChangeListener(callback) {
+		this.removeChangeListener('change', callback);
 	}
 
 	add(location) {
-		var favorites = this.getAll();
-
-		if (!this.isAddressInFavorites(location.address)) {
-			favorites.push({
-				location: {
-					name: location.name,
-					address: location.address
-				},
-				timestamp: Date.now()
-			});
-
-			this.updateStorage(favorites);
-		}
+		this.resource.addFavorite(location)
 	}
 
 	remove(location) {
+		this.resource.removeFavorite(location);
+	}
 
-		var favorites = this.getAll();
-		var index = -1;
+	getFavorites() {
+		return this.resource.getFavorites();
+	}
 
-		for (var i = 0; i < favorites.length; i++) {
+	isAddressInFavorites(location) {
+		return this.resource.isAddressInFavorites(location)
+	}
 
-			if (favorites[i].location.address == location.address) {
-				index = i;
-				break;
+	registerDispatcher() {
+		return Dispatcher.register((payload) => {
+			var action = payload.action;
+
+			switch(action.actionType) {
+				case Constants.ADD_FAVORITE:
+					this.resource.addFavorite(payload.action.item);
+					break;
+
+				case Constants.REMOVE_FAVORITE:
+					this.resource.removeFavorite(payload.action.item);
+					break;
+
 			}
 
-		}
+			this.emitChange();
 
-		// If it was found, remove it from the favorites array
-
-		if (index !== -1) {
-
-			favorites.splice(index, 1);
-
-			this.updateStorage(favorites);
-
-		}
+			return true;
+		});
 	}
-}
+};
 
-// for now init here !
 module.exports = FavoritesStore;

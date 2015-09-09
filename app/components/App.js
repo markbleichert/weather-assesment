@@ -6,21 +6,34 @@ var WeatherBox = require('./weatherbox/WeatherBox');
 var Map = require('./Map');
 var CurrentLocation = require('./CurrentLocation');
 var FavoritesList = require('./favorites/FavoritesList');
+var Actions = require('../actions/Actions');
 
 require('../styles/global.less');
 
 var App = React.createClass({
 
 	propTypes: {
-		stores: React.PropTypes.object
+		locations: React.PropTypes.object,
+		favorites: React.PropTypes.object
+	},
+
+	onChange() {
+		this.setState({
+			favorites: this.props.favorites.getFavorites()
+		})
+	},
+
+	componentWillMount() {
+		this.props.favorites.addChangeListener(this.onChange);
+	},
+
+	componentWillUnmount() {
+		this.props.favorites.removeChangeListener(this.onChange)
 	},
 
 	getInitialState() {
-
-		var store = this.props.stores.getStore('FavoritesStore');
-
 		return {
-			favorites: store.getAll(),
+			favorites: this.props.favorites.getFavorites(),
 			location: {
 				name: 'Amsterdam',
 				address: 'Rinse Hofstraweg, 1118 Schiphol, Netherlands',
@@ -33,43 +46,6 @@ var App = React.createClass({
 		};
 	},
 
-	toggleFavorite(location) {
-		if (this.isAddressInFavorites(location)) {
-			this.removeFromFavorites(location);
-		}
-		else {
-			this.addToFavorites(location);
-		}
-	},
-
-	addToFavorites(location) {
-		var store = this.props.stores.getStore('FavoritesStore');
-
-		var favorites = store.getAll();
-
-		store.add(location);
-
-		this.setState({
-			favorites: store.getAll()
-		});
-	},
-
-	removeFromFavorites(location) {
-		var store = this.props.stores.getStore('FavoritesStore');
-
-		store.remove(location);
-
-		this.setState({
-			favorites: store.getAll()
-		});
-
-	},
-
-	isAddressInFavorites(location) {
-		var store = this.props.stores.getStore('FavoritesStore');
-		return (store.getByAddress(location.address) !== null);
-	},
-
 	getFormattedStatus(status = 'ERR') {
 		var map = {
 			'ERR': 'Unexpect error occured',
@@ -80,11 +56,23 @@ var App = React.createClass({
 		return map[status];
 	},
 
+	toggleFavorite(location) {
+		if (this.props.favorites.isAddressInFavorites(location.address)) {
+			Actions.removeFavorite(location);
+		}
+		else {
+			Actions.addFavorite(location);
+		}
+	},
+
+	isAddressInFavorites(location) {
+		return this.props.favorites.isAddressInFavorites(location.address);
+	},
+
 	searchForAddress(location_name) {
 
 		// get the location object from the data by name entered in search
-		var dataStore = this.props.stores.getStore('DataStore');
-		var location = dataStore.getLocationByName(location_name);
+		var location = this.props.locations.getLocationByName(location_name);
 
 		var options = {
 			location: {
@@ -98,6 +86,7 @@ var App = React.createClass({
 					this.setState({
 						searchStatus: this.getFormattedStatus(status),
 						location: {
+
 							name: location_name,
 							address: results[0].formatted_address,
 							coords: {
@@ -120,12 +109,11 @@ var App = React.createClass({
 	},
 
 	render() {
+		var store = this.props.locations;
 
-		var dataStore = this.props.stores.getStore('DataStore');
-
-		// get the necessary data from the datastore
-		var listItems = dataStore.getListItems();
-		var currentlocationItems = dataStore.getCurrentLocationItems(this.state.location.name);
+		// get needed data from store
+		var listItems = store.getListItems();
+		var currentlocationItems = store.getCurrentLocationItems(this.state.location.name);
 
 		return (
 
@@ -159,12 +147,12 @@ var App = React.createClass({
 							</div>
 						</div>
 						<div className={'row'}>
-							<div className={'col-md-5'}>
+							<div className={'col-md-6'}>
 								<WeatherBox
 									activeLocation={this.state.location}
 									locations={currentlocationItems} />
 							</div>
-							<div className={'col-md-7'}>
+							<div className={'col-md-6'}>
 								<Map
 									coords={this.state.location.coords}
 									address={this.state.location.address} />
