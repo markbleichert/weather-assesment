@@ -50,7 +50,7 @@
 	
 	var App = __webpack_require__(157);
 	var LocationsStore = __webpack_require__(279);
-	var FavoritesStore = __webpack_require__(280);
+	var FavoritesStore = __webpack_require__(281);
 	var FavoritesResource = __webpack_require__(282);
 	var StoresManager = __webpack_require__(283);
 	var data = __webpack_require__(284);
@@ -63,12 +63,9 @@
 	var favoritesStore = new FavoritesStore(favoritesStoreImpl);
 	
 	// add some initial favorites
-	favoritesStore.add({ 'name': 'Amsterdam',
-		'address': 'Rinse Hofstraweg, 1118 Schiphol, Netherlands' });
-	favoritesStore.add({ 'name': 'Groningen',
-		'address': 'Het Hout 151-152, 9723 Groningen, Netherlands' });
-	favoritesStore.add({ 'name': 'Maastricht',
-		'address': 'Horsterweg 15, 6199 AC Maastricht-Airport, Netherlands' });
+	favoritesStore.add({ 'place_name': 'Amsterdam' });
+	favoritesStore.add({ 'place_name': 'Groningen' });
+	favoritesStore.add({ 'place_name': 'Maastricht' });
 	
 	// pass configured stores to React and get started
 	React.render(React.createElement(App, { favorites: favoritesStore, locations: locationsStore }), document.getElementById('main'));
@@ -20474,32 +20471,32 @@
 			favorites: React.PropTypes.object.isRequired
 		},
 	
-		onChange: function onChange() {
+		onFavoritesChange: function onFavoritesChange() {
 			this.setState({
 				favorites: this.props.favorites.getFavorites()
 			});
 		},
 	
+		onLocationChange: function onLocationChange() {
+			this.setState({
+				currentLocationSet: this.props.locations.getLocationItems()
+			});
+		},
+	
 		componentWillMount: function componentWillMount() {
-			this.props.favorites.addChangeListener(this.onChange);
+			this.props.favorites.addChangeListener(this.onFavoritesChange);
+			this.props.locations.addChangeListener(this.onLocationChange);
 		},
 	
 		componentWillUnmount: function componentWillUnmount() {
-			this.props.favorites.removeChangeListener(this.onChange);
+			this.props.favorites.removeChangeListener(this.onFavoritesChange);
+			this.props.locations.removeChangeListener(this.onLocationChange);
 		},
 	
 		getInitialState: function getInitialState() {
 			return {
 				favorites: this.props.favorites.getFavorites(),
-				location: {
-					name: 'Amsterdam',
-					address: 'Rinse Hofstraweg, 1118 Schiphol, Netherlands',
-					coords: {
-						lat: 52.3,
-						lng: 4.766667
-					}
-				}
-	
+				currentLocationSet: this.props.locations.getLocationItems()
 			};
 		},
 	
@@ -20516,63 +20513,22 @@
 		},
 	
 		toggleFavorite: function toggleFavorite(location) {
-			if (this.props.favorites.isAddressInFavorites(location.address)) {
+			if (this.props.favorites.isFavorite(location)) {
 				Actions.removeFavorite(location);
 			} else {
 				Actions.addFavorite(location);
 			}
 		},
 	
-		isAddressInFavorites: function isAddressInFavorites(location) {
-			return this.props.favorites.isAddressInFavorites(location.address);
+		isFavorite: function isFavorite(location) {
+			return this.props.favorites.isFavorite(location);
 		},
 	
-		searchForAddress: function searchForAddress(location_name) {
-			var _this = this;
-	
-			// get the location object from the data by name entered in search
-			var location = this.props.locations.getLocationByName(location_name);
-	
-			var options = {
-				location: {
-					lat: location.latitude,
-					lng: location.longitude
-				},
-				callback: function callback(results, status) {
-	
-					if (status === 'OK') {
-	
-						_this.setState({
-							searchStatus: _this.getFormattedStatus(status),
-							location: {
-	
-								name: location_name,
-								address: results[0].formatted_address,
-								coords: {
-									lat: location.latitude,
-									lng: location.longitude
-								}
-							}
-						});
-					} else {
-						// no results found !
-						_this.setState({
-							searchStatus: _this.getFormattedStatus(status)
-						});
-					}
-				}
-			};
-	
-			GMaps.geocode(options);
+		onNewLocation: function onNewLocation(location_name) {
+			Actions.setActiveLocation(location_name);
 		},
 	
 		render: function render() {
-			var store = this.props.locations;
-	
-			// get needed data from store
-			var listItems = store.getListItems();
-			var currentlocationItems = store.getCurrentLocationItems(this.state.location.name);
-	
 			return React.createElement(
 				'div',
 				null,
@@ -20589,14 +20545,13 @@
 						{ className: 'col-md-3' },
 						React.createElement('br', null),
 						React.createElement(SearchBox, {
-							onSearch: this.searchForAddress,
+							onSearch: this.onNewLocation,
 							label: 'Locations',
-							data: listItems,
-							status: this.state.searchStatus }),
+							data: this.props.locations.getLocationList() }),
 						React.createElement(FavoritesList, {
 							locations: this.state.favorites,
-							activeLocation: this.state.location,
-							onClick: this.searchForAddress })
+							activeLocation: this.state.currentLocationSet[0],
+							onClick: this.onNewLocation })
 					),
 					React.createElement(
 						'div',
@@ -20608,8 +20563,8 @@
 								'div',
 								{ className: 'col-md-12' },
 								React.createElement(CurrentLocation, {
-									location: this.state.location,
-									favorite: this.isAddressInFavorites(this.state.location),
+									location: this.state.currentLocationSet[0],
+									favorite: this.isFavorite(this.state.currentLocationSet[0]),
 									onFavoriteToggle: this.toggleFavorite })
 							)
 						),
@@ -20620,15 +20575,12 @@
 								'div',
 								{ className: 'col-md-6' },
 								React.createElement(WeatherBox, {
-									activeLocation: this.state.location,
-									locations: currentlocationItems })
+									locations: this.state.currentLocationSet })
 							),
 							React.createElement(
 								'div',
 								{ className: 'col-md-6' },
-								React.createElement(Map, {
-									coords: this.state.location.coords,
-									address: this.state.location.address })
+								React.createElement(Map, { location: this.state.currentLocationSet[0] })
 							)
 						),
 						React.createElement(
@@ -20642,7 +20594,7 @@
 									null,
 									'5 day forecast'
 								),
-								React.createElement(Forecast, { locations: currentlocationItems })
+								React.createElement(Forecast, { locations: this.state.currentLocationSet })
 							)
 						)
 					)
@@ -20716,12 +20668,7 @@
 					searchable: this.state.searchable,
 					disabled: this.state.disabled,
 					onChange: this.updateValue
-				}),
-				React.createElement(
-					'span',
-					{ className: 'status' },
-					this.props.status
-				)
+				})
 			);
 		}
 	});
@@ -33555,14 +33502,12 @@
 		displayName: 'WeatherBox',
 	
 		propTypes: {
-			locations: React.PropTypes.arrayOf(React.PropTypes.object).isRequired,
-			activeLocation: React.PropTypes.object.isRequired
+			locations: React.PropTypes.arrayOf(React.PropTypes.object)
 		},
 	
 		getDefaultProps: function getDefaultProps() {
 			return {
-				locations: [],
-				activeLocation: {}
+				locations: []
 			};
 		},
 	
@@ -33851,14 +33796,12 @@
 		displayName: 'Map',
 	
 		propTypes: {
-			address: React.PropTypes.string,
-			coords: React.PropTypes.object
+			location: React.PropTypes.object
 		},
 	
 		getDefaultProps: function getDefaultProps() {
 			return {
-				address: '',
-				coords: {}
+				location: {}
 			};
 		},
 	
@@ -33873,8 +33816,10 @@
 		},
 	
 		componentDidUpdate: function componentDidUpdate() {
+			var lat = this.props.location.latitude;
+			var lng = this.props.location.longitude;
 	
-			if (this.lastLat == this.props.coords.lat && this.lastLng == this.props.coords.lng) {
+			if (this.lastLat == lat && this.lastLng == lng) {
 	
 				// The map has already been initialized at these coordinates.
 				// Return from this method so that we don't reinitialize it
@@ -33882,8 +33827,8 @@
 				return;
 			}
 	
-			this.lastLat = this.props.coords.lat;
-			this.lastLng = this.props.coords.lng;
+			this.lastLat = lat;
+			this.lastLng = lng;
 	
 			// get the map dom element
 			var mapDomElement = React.findDOMNode(this.refs.map);
@@ -33893,13 +33838,13 @@
 				zoom: 10,
 				mapTypeControl: false,
 				center: {
-					lat: this.props.coords.lat,
-					lng: this.props.coords.lng
+					lat: lat,
+					lng: lng
 				}
 			});
 	
 			// build info window content
-			var contentString = '<div class="info">' + this.props.address + '</div>';
+			var contentString = '<div class="info">' + this.props.location.place_name + ' <br/> ' + lat + ' - ' + lng + '</div>';
 	
 			var infowindow = new google.maps.InfoWindow({
 				content: contentString
@@ -33908,8 +33853,8 @@
 			// Adding a marker to the location we are showing
 			var marker = new google.maps.Marker({
 				position: {
-					lat: this.props.coords.lat,
-					lng: this.props.coords.lng
+					lat: lat,
+					lng: lng
 				},
 				map: map
 			});
@@ -33991,7 +33936,7 @@
 					React.createElement(
 						'span',
 						null,
-						this.props.location.name
+						this.props.location.place_name
 					)
 				),
 				React.createElement('span', { className: starClassName, onClick: this.toggleFavorite, 'aria-hidden': 'true' })
@@ -34040,7 +33985,7 @@
 	
 			var locations = this.props.locations.map(function (loc, index) {
 	
-				var active = _this.props.activeLocation.address == loc.location.address;
+				var active = _this.props.activeLocation.place_name == loc.location.place_name;
 	
 				// Passing the onClick callback of this
 				// FavoritesList to each FavoritesItem.
@@ -34097,7 +34042,7 @@
 		},
 	
 		handleClick: function handleClick() {
-			this.props.onClick(this.props.location.name);
+			this.props.onClick(this.props.location.place_name);
 		},
 	
 		render: function render() {
@@ -34110,7 +34055,7 @@
 			return React.createElement(
 				'a',
 				{ className: itemClassNames, onClick: this.handleClick },
-				this.props.location.name,
+				this.props.location.place_name,
 				React.createElement('span', { className: 'glyphicon glyphicon-menu-right' })
 			);
 		}
@@ -34147,6 +34092,13 @@
 				actionType: Constants.REMOVE_FAVORITE,
 				item: item
 			});
+		},
+	
+		setActiveLocation: function setActiveLocation(name) {
+			Dispatcher.handleViewAction({
+				actionType: Constants.SET_ACTIVE_LOCATION,
+				name: name
+			});
 		}
 	};
 	
@@ -34160,7 +34112,8 @@
 	
 	module.exports = {
 		ADD_FAVORITE: 'ADD_FAVORITE',
-		REMOVE_FAVORITE: 'REMOVE_FAVORITE'
+		REMOVE_FAVORITE: 'REMOVE_FAVORITE',
+		SET_ACTIVE_LOCATION: 'SET_ACTIVE_LOCATION'
 	};
 
 /***/ },
@@ -34552,74 +34505,6 @@
 
 /***/ },
 /* 279 */
-/***/ function(module, exports) {
-
-	"use strict";
-	
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var LocationsStore = (function () {
-		function LocationsStore(data) {
-			_classCallCheck(this, LocationsStore);
-	
-			this.data = data;
-		}
-	
-		// should not depend on data in order
-		// but for now just get the first one in the array
-	
-		_createClass(LocationsStore, [{
-			key: "getLocationByName",
-			value: function getLocationByName(location_name) {
-				return this.getCurrentLocationItems(location_name)[0];
-			}
-		}, {
-			key: "getCurrentLocationItems",
-			value: function getCurrentLocationItems(location_name) {
-				return this.data.filter(function (obj) {
-	
-					if (obj.place_name == location_name) {
-						return obj;
-					}
-				});
-			}
-		}, {
-			key: "getListItems",
-			value: function getListItems() {
-	
-				var uniqueLocations = {};
-	
-				return this.data.filter(function (obj) {
-	
-					var test = (obj.station_id in uniqueLocations);
-	
-					// should not depend on data in order
-					// ensure unique locations
-					if (test) {
-						return false;
-					} else {
-						uniqueLocations[obj.station_id] = true;
-						return true;
-					}
-				}).map(function (obj) {
-	
-					return {
-						value: obj.place_name,
-						label: obj.place_name
-					};
-				});
-			}
-		}]);
-	
-		return LocationsStore;
-	})();
-	
-	module.exports = LocationsStore;
-
-/***/ },
-/* 280 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -34634,20 +34519,22 @@
 	
 	var Constants = __webpack_require__(272);
 	var Dispatcher = __webpack_require__(273);
-	var EventEmitter = __webpack_require__(281).EventEmitter;
+	var EventEmitter = __webpack_require__(280).EventEmitter;
 	
-	var FavoritesStore = (function (_EventEmitter) {
-		_inherits(FavoritesStore, _EventEmitter);
+	var LocationsStore = (function (_EventEmitter) {
+		_inherits(LocationsStore, _EventEmitter);
 	
-		function FavoritesStore(resource) {
-			_classCallCheck(this, FavoritesStore);
+		function LocationsStore(locations) {
+			_classCallCheck(this, LocationsStore);
 	
-			_get(Object.getPrototypeOf(FavoritesStore.prototype), 'constructor', this).call(this);
-			this.resource = resource;
+			_get(Object.getPrototypeOf(LocationsStore.prototype), 'constructor', this).call(this);
+			this.activeLocation = 'Amsterdam';
+			this.locations = locations;
+	
 			this.registerDispatcher();
 		}
 	
-		_createClass(FavoritesStore, [{
+		_createClass(LocationsStore, [{
 			key: 'emitChange',
 			value: function emitChange() {
 				this.emit('change');
@@ -34663,60 +34550,75 @@
 				this.removeChangeListener('change', callback);
 			}
 		}, {
-			key: 'add',
-			value: function add(location) {
-				this.resource.addFavorite(location);
+			key: 'setActiveLocation',
+			value: function setActiveLocation(name) {
+				this.activeLocation = name;
 			}
 		}, {
-			key: 'remove',
-			value: function remove(location) {
-				this.resource.removeFavorite(location);
+			key: 'getLocationItems',
+			value: function getLocationItems() {
+				var _this = this;
+	
+				return this.locations.filter(function (location) {
+					if (location.place_name == _this.activeLocation) {
+						return location;
+					}
+				});
 			}
 		}, {
-			key: 'getFavorites',
-			value: function getFavorites() {
-				return this.resource.getFavorites();
-			}
-		}, {
-			key: 'isAddressInFavorites',
-			value: function isAddressInFavorites(location) {
-				return this.resource.isAddressInFavorites(location);
+			key: 'getLocationList',
+			value: function getLocationList() {
+	
+				var uniqueLocations = {};
+	
+				return this.locations.filter(function (location) {
+	
+					var test = (location.station_id in uniqueLocations);
+	
+					// should not depend on data in order
+					// ensure unique locations
+					if (test) {
+						return false;
+					} else {
+						uniqueLocations[location.station_id] = true;
+						return true;
+					}
+				}).map(function (location) {
+					return {
+						value: location.place_name,
+						label: location.place_name
+					};
+				});
 			}
 		}, {
 			key: 'registerDispatcher',
 			value: function registerDispatcher() {
-				var _this = this;
+				var _this2 = this;
 	
 				return Dispatcher.register(function (payload) {
 					var action = payload.action;
 	
 					switch (action.actionType) {
-						case Constants.ADD_FAVORITE:
-							_this.resource.addFavorite(payload.action.item);
-							break;
-	
-						case Constants.REMOVE_FAVORITE:
-							_this.resource.removeFavorite(payload.action.item);
+						case Constants.SET_ACTIVE_LOCATION:
+							_this2.setActiveLocation(payload.action.name);
 							break;
 	
 					}
 	
-					_this.emitChange();
+					_this2.emitChange();
 	
 					return true;
 				});
 			}
 		}]);
 	
-		return FavoritesStore;
+		return LocationsStore;
 	})(EventEmitter);
 	
-	;
-	
-	module.exports = FavoritesStore;
+	module.exports = LocationsStore;
 
 /***/ },
-/* 281 */
+/* 280 */
 /***/ function(module, exports) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -35023,6 +34925,103 @@
 
 
 /***/ },
+/* 281 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+	
+	var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var Constants = __webpack_require__(272);
+	var Dispatcher = __webpack_require__(273);
+	var EventEmitter = __webpack_require__(280).EventEmitter;
+	
+	var FavoritesStore = (function (_EventEmitter) {
+		_inherits(FavoritesStore, _EventEmitter);
+	
+		function FavoritesStore(resource) {
+			_classCallCheck(this, FavoritesStore);
+	
+			_get(Object.getPrototypeOf(FavoritesStore.prototype), 'constructor', this).call(this);
+			this.resource = resource;
+			this.registerDispatcher();
+		}
+	
+		_createClass(FavoritesStore, [{
+			key: 'emitChange',
+			value: function emitChange() {
+				this.emit('change');
+			}
+		}, {
+			key: 'addChangeListener',
+			value: function addChangeListener(callback) {
+				this.on('change', callback);
+			}
+		}, {
+			key: 'removeChangeListener',
+			value: function removeChangeListener(callback) {
+				this.removeChangeListener('change', callback);
+			}
+		}, {
+			key: 'add',
+			value: function add(location) {
+				this.resource.addFavorite(location);
+			}
+		}, {
+			key: 'remove',
+			value: function remove(location) {
+				this.resource.removeFavorite(location);
+			}
+		}, {
+			key: 'getFavorites',
+			value: function getFavorites() {
+				return this.resource.getFavorites();
+			}
+		}, {
+			key: 'isFavorite',
+			value: function isFavorite(location) {
+				return this.resource.isFavorite(location);
+			}
+		}, {
+			key: 'registerDispatcher',
+			value: function registerDispatcher() {
+				var _this = this;
+	
+				return Dispatcher.register(function (payload) {
+					var action = payload.action;
+	
+					switch (action.actionType) {
+						case Constants.ADD_FAVORITE:
+							_this.resource.addFavorite(payload.action.item);
+							break;
+	
+						case Constants.REMOVE_FAVORITE:
+							_this.resource.removeFavorite(payload.action.item);
+							break;
+	
+					}
+	
+					_this.emitChange();
+	
+					return true;
+				});
+			}
+		}]);
+	
+		return FavoritesStore;
+	})(EventEmitter);
+	
+	;
+	
+	module.exports = FavoritesStore;
+
+/***/ },
 /* 282 */
 /***/ function(module, exports) {
 
@@ -35040,18 +35039,18 @@
 		}
 	
 		_createClass(FavoritesResource, [{
-			key: 'isAddressInFavorites',
-			value: function isAddressInFavorites(address) {
-				return this._getByAddress(address) !== null;
+			key: 'isFavorite',
+			value: function isFavorite(location) {
+				return this._getByName(location) !== null;
 			}
 		}, {
-			key: '_getByAddress',
-			value: function _getByAddress(address) {
+			key: '_getByName',
+			value: function _getByName(location) {
 				var favorites = this.getFavorites();
 				var result = null;
 	
 				favorites.some(function (loc) {
-					if (loc.location.address == address) {
+					if (loc.location.place_name == location.place_name) {
 						result = loc;
 						return true;
 					}
@@ -35074,11 +35073,10 @@
 			value: function addFavorite(location) {
 				var favorites = this.getFavorites();
 	
-				if (!this.isAddressInFavorites(location.address)) {
+				if (!this.isFavorite(location)) {
 					favorites.push({
 						location: {
-							name: location.name,
-							address: location.address
+							place_name: location.place_name
 						},
 						timestamp: Date.now()
 					});
@@ -35095,7 +35093,7 @@
 	
 				for (var i = 0; i < favorites.length; i++) {
 	
-					if (favorites[i].location.address == location.address) {
+					if (favorites[i].location.place_name == location.place_name) {
 						index = i;
 						break;
 					}
