@@ -57,6 +57,7 @@ $ open index.html
 
 * [React](http://facebook.github.io/react/).
 * [Moment.js](http://momentjs.com/).
+* [Flux](https://github.com/facebook/flux). - basic flux implementation
 * [classnames](https://www.npmjs.com/package/classnames) —  class name generator.
 * [GMaps](http://hpneo.github.io/gmaps/) —  google maps api.
 
