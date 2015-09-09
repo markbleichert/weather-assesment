@@ -44,7 +44,7 @@ var Map = React.createClass({
 
 		// create the map with our coordinates
 		var map = new google.maps.Map(mapDomElement, {
-			zoom: 10,
+			zoom: 8,
 			mapTypeControl: false,
 			center: {
 				lat: lat,
@@ -54,7 +54,7 @@ var Map = React.createClass({
 
 
 		// build info window content
-		var contentString = `<div class="info">${this.props.location.place_name} <br/> ${lat} - ${lng}</div>`;
+		var contentString = `<div class="info">Weather station: <br/> ${this.props.location.place_name} <br/> ${lat} - ${lng}</div>`;
 
 		var infowindow = new google.maps.InfoWindow({
 			content: contentString
