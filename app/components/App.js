@@ -17,32 +17,32 @@ var App = React.createClass({
 		favorites: React.PropTypes.object.isRequired
 	},
 
-	onChange() {
+	onFavoritesChange() {
 		this.setState({
 			favorites: this.props.favorites.getFavorites()
 		})
 	},
 
+	onLocationChange() {
+		this.setState({
+			currentLocationSet: this.props.locations.getLocationItems()
+		})
+	},
+
 	componentWillMount() {
-		this.props.favorites.addChangeListener(this.onChange);
+		this.props.favorites.addChangeListener(this.onFavoritesChange);
+		this.props.locations.addChangeListener(this.onLocationChange);
 	},
 
 	componentWillUnmount() {
-		this.props.favorites.removeChangeListener(this.onChange)
+		this.props.favorites.removeChangeListener(this.onFavoritesChange);
+		this.props.locations.removeChangeListener(this.onLocationChange);
 	},
 
 	getInitialState() {
 		return {
 			favorites: this.props.favorites.getFavorites(),
-			location: {
-				name: 'Amsterdam',
-				address: 'Rinse Hofstraweg, 1118 Schiphol, Netherlands',
-				coords: {
-					lat: 52.3,
-					lng: 4.766667
-				}
-			}
-
+			currentLocationSet: this.props.locations.getLocationItems()
 		};
 	},
 
@@ -57,7 +57,7 @@ var App = React.createClass({
 	},
 
 	toggleFavorite(location) {
-		if (this.props.favorites.isAddressInFavorites(location.address)) {
+		if (this.props.favorites.isFavorite(location)) {
 			Actions.removeFavorite(location);
 		}
 		else {
@@ -65,56 +65,15 @@ var App = React.createClass({
 		}
 	},
 
-	isAddressInFavorites(location) {
-		return this.props.favorites.isAddressInFavorites(location.address);
+	isFavorite(location) {
+		return this.props.favorites.isFavorite(location);
 	},
 
-	searchForAddress(location_name) {
-
-		// get the location object from the data by name entered in search
-		var location = this.props.locations.getLocationByName(location_name);
-
-		var options = {
-			location: {
-				lat: location.latitude,
-				lng: location.longitude
-			},
-			callback: (results, status) => {
-
-				if (status === 'OK') {
-
-					this.setState({
-						searchStatus: this.getFormattedStatus(status),
-						location: {
-
-							name: location_name,
-							address: results[0].formatted_address,
-							coords: {
-								lat: location.latitude,
-								lng: location.longitude
-							}
-						}
-					});
-
-				} else {
-					// no results found !
-					this.setState({
-						searchStatus: this.getFormattedStatus(status)
-					});
-				}
-			}
-		};
-
-		GMaps.geocode(options);
+	onNewLocation(location_name) {
+		Actions.setActiveLocation(location_name);
 	},
 
 	render() {
-		var store = this.props.locations;
-
-		// get needed data from store
-		var listItems = store.getListItems();
-		var currentlocationItems = store.getCurrentLocationItems(this.state.location.name);
-
 		return (
 
 			<div>
@@ -127,41 +86,37 @@ var App = React.createClass({
 					<div className={'col-md-3'}>
 						<br/>
 						<SearchBox
-							onSearch={this.searchForAddress}
+							onSearch={this.onNewLocation}
 							label='Locations'
-							data={listItems}
-							status={this.state.searchStatus}/>
+							data={this.props.locations.getLocationList()} />
 
 						<FavoritesList
 							locations={this.state.favorites}
-							activeLocation={this.state.location}
-							onClick={this.searchForAddress} />
+							activeLocation={this.state.currentLocationSet[0]}
+							onClick={this.onNewLocation} />
 					</div>
 					<div className={'col-md-9'}>
 						<div className={'row'}>
 							<div className={'col-md-12'}>
 								<CurrentLocation
-									location={this.state.location}
-									favorite={this.isAddressInFavorites(this.state.location)}
+									location={this.state.currentLocationSet[0]}
+									favorite={this.isFavorite(this.state.currentLocationSet[0])}
 									onFavoriteToggle={this.toggleFavorite} />
 							</div>
 						</div>
 						<div className={'row'}>
 							<div className={'col-md-6'}>
 								<WeatherBox
-									activeLocation={this.state.location}
-									locations={currentlocationItems} />
+									locations={this.state.currentLocationSet} />
 							</div>
 							<div className={'col-md-6'}>
-								<Map
-									coords={this.state.location.coords}
-									address={this.state.location.address} />
+								<Map location={this.state.currentLocationSet[0]} />
 							</div>
 						</div>
 						<div className={'row'}>
 							<div className={'col-md-12'}>
 								<h4>5 day forecast</h4>
-								<Forecast locations={currentlocationItems}/>
+								<Forecast locations={this.state.currentLocationSet}/>
 							</div>
 						</div>
 					</div>

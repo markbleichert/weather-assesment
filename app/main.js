@@ -16,12 +16,9 @@ var favoritesStoreImpl = new FavoritesResource(window.localStorage);
 var favoritesStore = new FavoritesStore(favoritesStoreImpl);
 
 // add some initial favorites
-favoritesStore.add({'name':'Amsterdam',
-	'address':'Rinse Hofstraweg, 1118 Schiphol, Netherlands'});
-favoritesStore.add({'name':'Groningen',
-	'address':'Het Hout 151-152, 9723 Groningen, Netherlands'});
-favoritesStore.add({'name':'Maastricht',
-	'address':'Horsterweg 15, 6199 AC Maastricht-Airport, Netherlands'});
+favoritesStore.add({'place_name':'Amsterdam'});
+favoritesStore.add({'place_name':'Groningen'});
+favoritesStore.add({'place_name':'Maastricht'});
 
 // pass configured stores to React and get started
 React.render(

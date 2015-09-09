@@ -8,14 +8,12 @@ require('../../styles/WeatherBox.css');
 var WeatherBox = React.createClass({
 
 	propTypes: {
-		locations: React.PropTypes.arrayOf(React.PropTypes.object).isRequired,
-		activeLocation: React.PropTypes.object.isRequired
+		locations: React.PropTypes.arrayOf(React.PropTypes.object)
 	},
 
 	getDefaultProps() {
 		return {
-			locations: [],
-			activeLocation: {}
+			locations: []
 		};
 	},
 

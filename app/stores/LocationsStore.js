@@ -1,46 +1,79 @@
-class LocationsStore {
-	constructor(data) {
-		this.data = data;
+var Constants = require('../constants/Constants');
+var Dispatcher = require('../dispatchers/Dispatcher');
+var EventEmitter = require('events').EventEmitter;
+
+class LocationsStore extends EventEmitter {
+	constructor(locations) {
+		super();
+		this.activeLocation = 'Amsterdam';
+		this.locations = locations;
+
+		this.registerDispatcher();
 	}
 
-	// should not depend on data in order
-	// but for now just get the first one in the array
-	getLocationByName(location_name) {
-		return this.getCurrentLocationItems(location_name)[0];
+	emitChange() {
+		this.emit('change');
 	}
 
-	getCurrentLocationItems(location_name) {
-		return this.data.filter(function (obj) {
+	addChangeListener(callback) {
+		this.on('change', callback);
+	}
 
-			if (obj.place_name == location_name) {
-				return (obj);
+	removeChangeListener(callback) {
+		this.removeChangeListener('change', callback);
+	}
+
+	setActiveLocation(name) {
+		this.activeLocation = name;
+	}
+
+	getLocationItems() {
+		return this.locations.filter((location) => {
+			if (location.place_name == this.activeLocation) {
+				return (location);
 			}
 		});
 	}
 
-	getListItems() {
+	getLocationList() {
 
 		var uniqueLocations = {};
 
-		return this.data.filter((obj) => {
+		return this.locations.filter((location) => {
 
-			var test = (obj.station_id in uniqueLocations);
+			var test = (location.station_id in uniqueLocations);
 
 			// should not depend on data in order
 			// ensure unique locations
 			if (test) {
 				return false
 			} else {
-				uniqueLocations[obj.station_id] = true;
+				uniqueLocations[location.station_id] = true;
 				return true;
 			}
 
-		}).map(obj => {
-
+		}).map(location => {
 			return {
-				value: obj.place_name,
-				label: obj.place_name
+				value: location.place_name,
+				label: location.place_name
 			};
+		});
+	}
+
+	registerDispatcher() {
+		return Dispatcher.register((payload) => {
+			var action = payload.action;
+
+			switch(action.actionType) {
+				case Constants.SET_ACTIVE_LOCATION:
+					this.setActiveLocation(payload.action.name);
+					break;
+
+			}
+
+			this.emitChange();
+
+			return true;
 		});
 	}
 }

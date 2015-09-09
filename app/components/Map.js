@@ -5,14 +5,12 @@ require('../styles/Map.css');
 var Map = React.createClass({
 
 	propTypes: {
-		address: React.PropTypes.string,
-		coords: React.PropTypes.object
+		location: React.PropTypes.object
 	},
 
 	getDefaultProps() {
 		return {
-			address: '',
-			coords: {}
+			location: {}
 		};
 	},
 
@@ -27,8 +25,10 @@ var Map = React.createClass({
 	},
 
 	componentDidUpdate() {
+		var lat = this.props.location.latitude;
+		var lng = this.props.location.longitude;
 
-		if (this.lastLat == this.props.coords.lat && this.lastLng == this.props.coords.lng) {
+		if (this.lastLat == lat && this.lastLng == lng) {
 
 			// The map has already been initialized at these coordinates.
 			// Return from this method so that we don't reinitialize it
@@ -36,8 +36,8 @@ var Map = React.createClass({
 			return;
 		}
 
-		this.lastLat = this.props.coords.lat;
-		this.lastLng = this.props.coords.lng;
+		this.lastLat = lat;
+		this.lastLng = lng;
 
 		// get the map dom element
 		var mapDomElement = React.findDOMNode(this.refs.map)
@@ -47,14 +47,14 @@ var Map = React.createClass({
 			zoom: 10,
 			mapTypeControl: false,
 			center: {
-				lat: this.props.coords.lat,
-				lng: this.props.coords.lng
+				lat: lat,
+				lng: lng
 			}
 		});
 
 
 		// build info window content
-		var contentString = `<div class="info">${this.props.address}</div>`;
+		var contentString = `<div class="info">${this.props.location.place_name} <br/> ${lat} - ${lng}</div>`;
 
 		var infowindow = new google.maps.InfoWindow({
 			content: contentString
@@ -63,8 +63,8 @@ var Map = React.createClass({
 		// Adding a marker to the location we are showing
 		var marker = new google.maps.Marker({
 			position: {
-				lat: this.props.coords.lat,
-				lng: this.props.coords.lng
+				lat: lat,
+				lng: lng
 			},
 			map: map
 		});

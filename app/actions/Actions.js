@@ -14,6 +14,13 @@ var Actions = {
 			actionType: Constants.REMOVE_FAVORITE,
 			item: item
 		});
+	},
+
+	setActiveLocation: function (name) {
+		Dispatcher.handleViewAction({
+			actionType: Constants.SET_ACTIVE_LOCATION,
+			name: name
+		});
 	}
 };
 

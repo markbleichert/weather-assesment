@@ -32,8 +32,8 @@ class FavoritesStore extends EventEmitter {
 		return this.resource.getFavorites();
 	}
 
-	isAddressInFavorites(location) {
-		return this.resource.isAddressInFavorites(location)
+	isFavorite(location) {
+		return this.resource.isFavorite(location)
 	}
 
 	registerDispatcher() {

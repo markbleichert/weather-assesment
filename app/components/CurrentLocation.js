@@ -31,7 +31,7 @@ var CurrentLocation = React.createClass({
 			<div className='current-location'>
 				<h4 className='save-location'>
 					<span className='title-prefix'>daily weather</span>
-					<span>{this.props.location.name}</span>
+					<span>{this.props.location.place_name}</span>
 				</h4>
 				<span className={starClassName} onClick={this.toggleFavorite} aria-hidden='true'></span>
 			</div>

@@ -4,16 +4,16 @@ class FavoritesResource {
 
 	}
 
-	isAddressInFavorites(address) {
-		return (this._getByAddress(address) !== null);
+	isFavorite(location) {
+		return (this._getByName(location) !== null);
 	}
 
-	_getByAddress(address) {
+	_getByName(location) {
 		var favorites = this.getFavorites();
 		var result = null;
 
 		favorites.some((loc) => {
-			if (loc.location.address == address) {
+			if (loc.location.place_name == location.place_name) {
 				result = loc;
 				return true;
 			}
@@ -33,11 +33,10 @@ class FavoritesResource {
 	addFavorite(location) {
 		var favorites = this.getFavorites();
 
-		if (!this.isAddressInFavorites(location.address)) {
+		if (!this.isFavorite(location)) {
 			favorites.push({
 				location: {
-					name: location.name,
-					address: location.address
+					place_name: location.place_name
 				},
 				timestamp: Date.now()
 			});
@@ -53,7 +52,7 @@ class FavoritesResource {
 
 		for (var i = 0; i < favorites.length; i++) {
 
-			if (favorites[i].location.address == location.address) {
+			if (favorites[i].location.place_name == location.place_name) {
 				index = i;
 				break;
 			}

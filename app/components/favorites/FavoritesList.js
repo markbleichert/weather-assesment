@@ -22,7 +22,7 @@ var FavoritesList = React.createClass({
 
 		var locations = this.props.locations.map((loc, index) => {
 
-			var active = this.props.activeLocation.address == loc.location.address;
+			var active = this.props.activeLocation.place_name == loc.location.place_name;
 
 			// Passing the onClick callback of this
 			// FavoritesList to each FavoritesItem.
