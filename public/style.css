@@ -315,7 +315,6 @@
 
 	direction: ltr;
 	display: block;
-	height: 120px;
 	left: 0px;
 	line-height: 16px;
 	list-style-image: none;
@@ -339,7 +338,7 @@
 	direction: ltr;
 	display: block;
 	float: left;
-	height: 120px;
+
 	line-height: 16px;
 	list-style-image: none;
 	list-style-position: outside;
@@ -446,7 +445,8 @@
 
 .min {
 	font-size: 14px;
-}/* List-group-horizontal*/
+}
+/* List-group-horizontal*/
 
 .list-group-horizontal .list-group-item {
     display: inline-block;
@@ -461,7 +461,6 @@
 }
 
 .weather-by-day-item {
-    width: 350px;
     height: 230px;
     margin-top: 20px;
     margin-bottom: 20px;
@@ -474,7 +473,7 @@ li.disabled{
 #weatherbox {
     display: block;
     float: none;
-    width: 400px;
+    margin-bottom: 20px;
 }
 
 .weather-location-navigation {
@@ -583,14 +582,11 @@ li a {
 }
 
 .map {
-    max-width: 450px;
     height: 320px;
     margin: 0 auto;
 }
 
 .map-holder {
-    max-width: 500px;
-    height: 300px;
     background-color: #FCFCFC;
     position: relative;
     border-radius: 2px;
@@ -602,7 +598,6 @@ li a {
     height: 22px;
     left: 50%;
     top: 50%;
-    margin: -11px auto 0 -42px;
     font-size: 20px;
     color: #969FA8;
 }
@@ -677,8 +672,8 @@ li a {
  */
 @font-face {
   font-family: 'weathericons';
-  src: url(e7ef2b448d27cf5312a73ceb3e7841c4.eot);
-  src: url(e7ef2b448d27cf5312a73ceb3e7841c4.eot?#iefix) format('embedded-opentype'), url(f5b0d0d9cb02e551003132e079435312.woff) format('woff'), url(2ca3df0981116e195ebc62dd1dcc8b9b.ttf) format('truetype'), url(b2233bc1525939550405c87cffede242.svg#weathericons-regular-webfontRg) format('svg');
+  src: url(/public/e7ef2b448d27cf5312a73ceb3e7841c4.eot);
+  src: url(/public/e7ef2b448d27cf5312a73ceb3e7841c4.eot?#iefix) format('embedded-opentype'), url(/public/f5b0d0d9cb02e551003132e079435312.woff) format('woff'), url(/public/2ca3df0981116e195ebc62dd1dcc8b9b.ttf) format('truetype'), url(/public/b2233bc1525939550405c87cffede242.svg#weathericons-regular-webfontRg) format('svg');
   font-weight: normal;
   font-style: normal;
 }

@@ -49,26 +49,29 @@
 	var React = __webpack_require__(1);
 	
 	var App = __webpack_require__(157);
-	var DataStore = __webpack_require__(273);
-	var FavStore = __webpack_require__(274);
-	var StoresManager = __webpack_require__(275);
+	var LocationsStore = __webpack_require__(279);
+	var FavoritesStore = __webpack_require__(280);
+	var FavoritesResource = __webpack_require__(282);
+	var StoresManager = __webpack_require__(283);
+	var data = __webpack_require__(284);
 	
-	var data = __webpack_require__(276);
+	// setup locations store
+	var locationsStore = new LocationsStore(data);
 	
-	// configuring stores and using store-manager
-	var stores = new StoresManager();
+	// set up favorite store with local storage impl.
+	var favoritesStoreImpl = new FavoritesResource(window.localStorage);
+	var favoritesStore = new FavoritesStore(favoritesStoreImpl);
 	
-	stores.addStore('DataStore', new DataStore(data));
-	stores.addStore('FavoritesStore', new FavStore(window.localStorage));
+	// add some initial favorites
+	favoritesStore.add({ 'name': 'Amsterdam',
+		'address': 'Rinse Hofstraweg, 1118 Schiphol, Netherlands' });
+	favoritesStore.add({ 'name': 'Groningen',
+		'address': 'Het Hout 151-152, 9723 Groningen, Netherlands' });
+	favoritesStore.add({ 'name': 'Maastricht',
+		'address': 'Horsterweg 15, 6199 AC Maastricht-Airport, Netherlands' });
 	
-	// set up init data for favorites
-	var favStore = stores.getStore('FavoritesStore');
-	
-	favStore.add({ "name": "Amsterdam", "address": "Rinse Hofstraweg, 1118 Schiphol, Netherlands" });
-	favStore.add({ "name": "Groningen", "address": "Het Hout 151-152, 9723 Groningen, Netherlands" });
-	favStore.add({ "name": "Maastricht", "address": "Horsterweg 15, 6199 AC Maastricht-Airport, Netherlands" });
-	
-	React.render(React.createElement(App, { stores: stores }), document.getElementById('main'));
+	// pass configured stores to React and get started
+	React.render(React.createElement(App, { favorites: favoritesStore, locations: locationsStore }), document.getElementById('main'));
 
 /***/ },
 /* 1 */
@@ -20455,26 +20458,39 @@
 	
 	var SearchBox = __webpack_require__(158);
 	var Forecast = __webpack_require__(167);
-	var WeatherBox = __webpack_require__(259);
-	var Map = __webpack_require__(265);
-	var CurrentLocation = __webpack_require__(267);
-	var FavoritesList = __webpack_require__(269);
+	var WeatherBox = __webpack_require__(258);
+	var Map = __webpack_require__(264);
+	var CurrentLocation = __webpack_require__(266);
+	var FavoritesList = __webpack_require__(268);
+	var Actions = __webpack_require__(271);
 	
-	__webpack_require__(272);
+	__webpack_require__(278);
 	
 	var App = React.createClass({
 		displayName: 'App',
 	
 		propTypes: {
-			stores: React.PropTypes.object
+			locations: React.PropTypes.object.isRequired,
+			favorites: React.PropTypes.object.isRequired
+		},
+	
+		onChange: function onChange() {
+			this.setState({
+				favorites: this.props.favorites.getFavorites()
+			});
+		},
+	
+		componentWillMount: function componentWillMount() {
+			this.props.favorites.addChangeListener(this.onChange);
+		},
+	
+		componentWillUnmount: function componentWillUnmount() {
+			this.props.favorites.removeChangeListener(this.onChange);
 		},
 	
 		getInitialState: function getInitialState() {
-	
-			var store = this.props.stores.getStore('FavoritesStore');
-	
 			return {
-				favorites: store.getAll(),
+				favorites: this.props.favorites.getFavorites(),
 				location: {
 					name: 'Amsterdam',
 					address: 'Rinse Hofstraweg, 1118 Schiphol, Netherlands',
@@ -20485,41 +20501,6 @@
 				}
 	
 			};
-		},
-	
-		toggleFavorite: function toggleFavorite(location) {
-			if (this.isAddressInFavorites(location)) {
-				this.removeFromFavorites(location);
-			} else {
-				this.addToFavorites(location);
-			}
-		},
-	
-		addToFavorites: function addToFavorites(location) {
-			var store = this.props.stores.getStore('FavoritesStore');
-	
-			var favorites = store.getAll();
-	
-			store.add(location);
-	
-			this.setState({
-				favorites: store.getAll()
-			});
-		},
-	
-		removeFromFavorites: function removeFromFavorites(location) {
-			var store = this.props.stores.getStore('FavoritesStore');
-	
-			store.remove(location);
-	
-			this.setState({
-				favorites: store.getAll()
-			});
-		},
-	
-		isAddressInFavorites: function isAddressInFavorites(location) {
-			var store = this.props.stores.getStore('FavoritesStore');
-			return store.getByAddress(location.address) !== null;
 		},
 	
 		getFormattedStatus: function getFormattedStatus() {
@@ -20534,12 +20515,23 @@
 			return map[status];
 		},
 	
+		toggleFavorite: function toggleFavorite(location) {
+			if (this.props.favorites.isAddressInFavorites(location.address)) {
+				Actions.removeFavorite(location);
+			} else {
+				Actions.addFavorite(location);
+			}
+		},
+	
+		isAddressInFavorites: function isAddressInFavorites(location) {
+			return this.props.favorites.isAddressInFavorites(location.address);
+		},
+	
 		searchForAddress: function searchForAddress(location_name) {
 			var _this = this;
 	
 			// get the location object from the data by name entered in search
-			var dataStore = this.props.stores.getStore('DataStore');
-			var location = dataStore.getLocationByName(location_name);
+			var location = this.props.locations.getLocationByName(location_name);
 	
 			var options = {
 				location: {
@@ -20553,6 +20545,7 @@
 						_this.setState({
 							searchStatus: _this.getFormattedStatus(status),
 							location: {
+	
 								name: location_name,
 								address: results[0].formatted_address,
 								coords: {
@@ -20574,12 +20567,11 @@
 		},
 	
 		render: function render() {
+			var store = this.props.locations;
 	
-			var dataStore = this.props.stores.getStore('DataStore');
-	
-			// get the necessary data from the datastore
-			var listItems = dataStore.getListItems();
-			var currentlocationItems = dataStore.getCurrentLocationItems(this.state.location.name);
+			// get needed data from store
+			var listItems = store.getListItems();
+			var currentlocationItems = store.getCurrentLocationItems(this.state.location.name);
 	
 			return React.createElement(
 				'div',
@@ -20626,14 +20618,14 @@
 							{ className: 'row' },
 							React.createElement(
 								'div',
-								{ className: 'col-md-5' },
+								{ className: 'col-md-6' },
 								React.createElement(WeatherBox, {
 									activeLocation: this.state.location,
 									locations: currentlocationItems })
 							),
 							React.createElement(
 								'div',
-								{ className: 'col-md-7' },
+								{ className: 'col-md-6' },
 								React.createElement(Map, {
 									coords: this.state.location.coords,
 									address: this.state.location.address })
@@ -21985,10 +21977,10 @@
 	
 	var React = __webpack_require__(1);
 	var moment = __webpack_require__(168);
-	var cn = __webpack_require__(256);
-	var util = __webpack_require__(257);
+	var cn = __webpack_require__(161);
+	var util = __webpack_require__(256);
 	
-	__webpack_require__(258);
+	__webpack_require__(257);
 	
 	var Forecast = React.createClass({
 		displayName: 'Forecast',
@@ -33530,61 +33522,6 @@
 
 /***/ },
 /* 256 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	  Copyright (c) 2015 Jed Watson.
-	  Licensed under the MIT License (MIT), see
-	  http://jedwatson.github.io/classnames
-	*/
-	
-	(function () {
-		'use strict';
-	
-		function classNames () {
-	
-			var classes = '';
-	
-			for (var i = 0; i < arguments.length; i++) {
-				var arg = arguments[i];
-				if (!arg) continue;
-	
-				var argType = typeof arg;
-	
-				if ('string' === argType || 'number' === argType) {
-					classes += ' ' + arg;
-	
-				} else if (Array.isArray(arg)) {
-					classes += ' ' + classNames.apply(null, arg);
-	
-				} else if ('object' === argType) {
-					for (var key in arg) {
-						if (arg.hasOwnProperty(key) && arg[key]) {
-							classes += ' ' + key;
-						}
-					}
-				}
-			}
-	
-			return classes.substr(1);
-		}
-	
-		if (typeof module !== 'undefined' && module.exports) {
-			module.exports = classNames;
-		} else if (true){
-			// AMD. Register as an anonymous module.
-			!(__WEBPACK_AMD_DEFINE_RESULT__ = function () {
-				return classNames;
-			}.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-		} else {
-			window.classNames = classNames;
-		}
-	
-	}());
-
-
-/***/ },
-/* 257 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -33596,23 +33533,23 @@
 	};
 
 /***/ },
-/* 258 */
+/* 257 */
 /***/ function(module, exports) {
 
 	// removed by extract-text-webpack-plugin
 
 /***/ },
-/* 259 */
+/* 258 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
-	var WeatherNavBar = __webpack_require__(260);
-	var WeatherItem = __webpack_require__(263);
+	var WeatherNavBar = __webpack_require__(259);
+	var WeatherItem = __webpack_require__(262);
 	var moment = __webpack_require__(168);
 	
-	__webpack_require__(264);
+	__webpack_require__(263);
 	
 	var WeatherBox = React.createClass({
 		displayName: 'WeatherBox',
@@ -33663,13 +33600,13 @@
 	module.exports = WeatherBox;
 
 /***/ },
-/* 260 */
+/* 259 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
-	var WeatherNavBarItem = __webpack_require__(261);
+	var WeatherNavBarItem = __webpack_require__(260);
 	var moment = __webpack_require__(168);
 	
 	var WeatherNavBar = React.createClass({
@@ -33722,15 +33659,15 @@
 	module.exports = WeatherNavBar;
 
 /***/ },
-/* 261 */
+/* 260 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
 	var moment = __webpack_require__(168);
-	var cn = __webpack_require__(256);
-	var DateBox = __webpack_require__(262);
+	var cn = __webpack_require__(161);
+	var DateBox = __webpack_require__(261);
 	
 	var WeatherNavBarItem = React.createClass({
 		displayName: 'WeatherNavBarItem',
@@ -33771,15 +33708,15 @@
 	module.exports = WeatherNavBarItem;
 
 /***/ },
-/* 262 */
+/* 261 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
 	var moment = __webpack_require__(168);
-	var cn = __webpack_require__(256);
-	var Util = __webpack_require__(257);
+	var cn = __webpack_require__(161);
+	var Util = __webpack_require__(256);
 	
 	var DateBox = React.createClass({
 		displayName: 'DateBox',
@@ -33820,16 +33757,16 @@
 	module.exports = DateBox;
 
 /***/ },
-/* 263 */
+/* 262 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
 	var moment = __webpack_require__(168);
-	var cn = __webpack_require__(256);
-	var DateBox = __webpack_require__(262);
-	var Util = __webpack_require__(257);
+	var cn = __webpack_require__(161);
+	var DateBox = __webpack_require__(261);
+	var Util = __webpack_require__(256);
 	
 	var WeatherItem = React.createClass({
 		displayName: 'WeatherItem',
@@ -33895,20 +33832,20 @@
 	module.exports = WeatherItem;
 
 /***/ },
-/* 264 */
+/* 263 */
 /***/ function(module, exports) {
 
 	// removed by extract-text-webpack-plugin
 
 /***/ },
-/* 265 */
+/* 264 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
 	
-	__webpack_require__(266);
+	__webpack_require__(265);
 	
 	var Map = React.createClass({
 		displayName: 'Map',
@@ -33999,21 +33936,21 @@
 	module.exports = Map;
 
 /***/ },
-/* 266 */
+/* 265 */
 /***/ function(module, exports) {
 
 	// removed by extract-text-webpack-plugin
 
 /***/ },
-/* 267 */
+/* 266 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
-	var classNames = __webpack_require__(256);
+	var classNames = __webpack_require__(161);
 	
-	__webpack_require__(268);
+	__webpack_require__(267);
 	
 	var CurrentLocation = React.createClass({
 		displayName: 'CurrentLocation',
@@ -34066,21 +34003,21 @@
 	module.exports = CurrentLocation;
 
 /***/ },
-/* 268 */
+/* 267 */
 /***/ function(module, exports) {
 
 	// removed by extract-text-webpack-plugin
 
 /***/ },
-/* 269 */
+/* 268 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
-	var FavoritesItem = __webpack_require__(270);
+	var FavoritesItem = __webpack_require__(269);
 	
-	__webpack_require__(271);
+	__webpack_require__(270);
 	
 	var FavoritesList = React.createClass({
 		displayName: 'FavoritesList',
@@ -34135,13 +34072,13 @@
 	module.exports = FavoritesList;
 
 /***/ },
-/* 270 */
+/* 269 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var React = __webpack_require__(1);
-	var classNames = __webpack_require__(256);
+	var classNames = __webpack_require__(161);
 	
 	var FavoritesItem = React.createClass({
 		displayName: 'FavoritesItem',
@@ -34183,19 +34120,438 @@
 	module.exports = FavoritesItem;
 
 /***/ },
-/* 271 */
+/* 270 */
 /***/ function(module, exports) {
 
 	// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 271 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var Constants = __webpack_require__(272);
+	var Dispatcher = __webpack_require__(273);
+	
+	var Actions = {
+		addFavorite: function addFavorite(item) {
+			Dispatcher.handleViewAction({
+				actionType: Constants.ADD_FAVORITE,
+				item: item
+			});
+		},
+	
+		removeFavorite: function removeFavorite(item) {
+			Dispatcher.handleViewAction({
+				actionType: Constants.REMOVE_FAVORITE,
+				item: item
+			});
+		}
+	};
+	
+	module.exports = Actions;
 
 /***/ },
 /* 272 */
 /***/ function(module, exports) {
 
-	// removed by extract-text-webpack-plugin
+	'use strict';
+	
+	module.exports = {
+		ADD_FAVORITE: 'ADD_FAVORITE',
+		REMOVE_FAVORITE: 'REMOVE_FAVORITE'
+	};
 
 /***/ },
 /* 273 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var FluxDispatcher = __webpack_require__(274).Dispatcher;
+	var assign = __webpack_require__(277);
+	
+	var Dispatcher = assign(new FluxDispatcher(), {
+		handleViewAction: function handleViewAction(action) {
+			this.dispatch({
+				source: 'VIEW_ACTION',
+				action: action
+			});
+		}
+	});
+	
+	module.exports = Dispatcher;
+
+/***/ },
+/* 274 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * Copyright (c) 2014-2015, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 */
+	
+	module.exports.Dispatcher = __webpack_require__(275);
+
+
+/***/ },
+/* 275 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * Copyright (c) 2014-2015, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 * @providesModule Dispatcher
+	 * 
+	 * @preventMunge
+	 */
+	
+	'use strict';
+	
+	exports.__esModule = true;
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+	
+	var invariant = __webpack_require__(276);
+	
+	var _prefix = 'ID_';
+	
+	/**
+	 * Dispatcher is used to broadcast payloads to registered callbacks. This is
+	 * different from generic pub-sub systems in two ways:
+	 *
+	 *   1) Callbacks are not subscribed to particular events. Every payload is
+	 *      dispatched to every registered callback.
+	 *   2) Callbacks can be deferred in whole or part until other callbacks have
+	 *      been executed.
+	 *
+	 * For example, consider this hypothetical flight destination form, which
+	 * selects a default city when a country is selected:
+	 *
+	 *   var flightDispatcher = new Dispatcher();
+	 *
+	 *   // Keeps track of which country is selected
+	 *   var CountryStore = {country: null};
+	 *
+	 *   // Keeps track of which city is selected
+	 *   var CityStore = {city: null};
+	 *
+	 *   // Keeps track of the base flight price of the selected city
+	 *   var FlightPriceStore = {price: null}
+	 *
+	 * When a user changes the selected city, we dispatch the payload:
+	 *
+	 *   flightDispatcher.dispatch({
+	 *     actionType: 'city-update',
+	 *     selectedCity: 'paris'
+	 *   });
+	 *
+	 * This payload is digested by `CityStore`:
+	 *
+	 *   flightDispatcher.register(function(payload) {
+	 *     if (payload.actionType === 'city-update') {
+	 *       CityStore.city = payload.selectedCity;
+	 *     }
+	 *   });
+	 *
+	 * When the user selects a country, we dispatch the payload:
+	 *
+	 *   flightDispatcher.dispatch({
+	 *     actionType: 'country-update',
+	 *     selectedCountry: 'australia'
+	 *   });
+	 *
+	 * This payload is digested by both stores:
+	 *
+	 *   CountryStore.dispatchToken = flightDispatcher.register(function(payload) {
+	 *     if (payload.actionType === 'country-update') {
+	 *       CountryStore.country = payload.selectedCountry;
+	 *     }
+	 *   });
+	 *
+	 * When the callback to update `CountryStore` is registered, we save a reference
+	 * to the returned token. Using this token with `waitFor()`, we can guarantee
+	 * that `CountryStore` is updated before the callback that updates `CityStore`
+	 * needs to query its data.
+	 *
+	 *   CityStore.dispatchToken = flightDispatcher.register(function(payload) {
+	 *     if (payload.actionType === 'country-update') {
+	 *       // `CountryStore.country` may not be updated.
+	 *       flightDispatcher.waitFor([CountryStore.dispatchToken]);
+	 *       // `CountryStore.country` is now guaranteed to be updated.
+	 *
+	 *       // Select the default city for the new country
+	 *       CityStore.city = getDefaultCityForCountry(CountryStore.country);
+	 *     }
+	 *   });
+	 *
+	 * The usage of `waitFor()` can be chained, for example:
+	 *
+	 *   FlightPriceStore.dispatchToken =
+	 *     flightDispatcher.register(function(payload) {
+	 *       switch (payload.actionType) {
+	 *         case 'country-update':
+	 *         case 'city-update':
+	 *           flightDispatcher.waitFor([CityStore.dispatchToken]);
+	 *           FlightPriceStore.price =
+	 *             getFlightPriceStore(CountryStore.country, CityStore.city);
+	 *           break;
+	 *     }
+	 *   });
+	 *
+	 * The `country-update` payload will be guaranteed to invoke the stores'
+	 * registered callbacks in order: `CountryStore`, `CityStore`, then
+	 * `FlightPriceStore`.
+	 */
+	
+	var Dispatcher = (function () {
+	  function Dispatcher() {
+	    _classCallCheck(this, Dispatcher);
+	
+	    this._callbacks = {};
+	    this._isDispatching = false;
+	    this._isHandled = {};
+	    this._isPending = {};
+	    this._lastID = 1;
+	  }
+	
+	  /**
+	   * Registers a callback to be invoked with every dispatched payload. Returns
+	   * a token that can be used with `waitFor()`.
+	   */
+	
+	  Dispatcher.prototype.register = function register(callback) {
+	    var id = _prefix + this._lastID++;
+	    this._callbacks[id] = callback;
+	    return id;
+	  };
+	
+	  /**
+	   * Removes a callback based on its token.
+	   */
+	
+	  Dispatcher.prototype.unregister = function unregister(id) {
+	    !this._callbacks[id] ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.unregister(...): `%s` does not map to a registered callback.', id) : invariant(false) : undefined;
+	    delete this._callbacks[id];
+	  };
+	
+	  /**
+	   * Waits for the callbacks specified to be invoked before continuing execution
+	   * of the current callback. This method should only be used by a callback in
+	   * response to a dispatched payload.
+	   */
+	
+	  Dispatcher.prototype.waitFor = function waitFor(ids) {
+	    !this._isDispatching ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.waitFor(...): Must be invoked while dispatching.') : invariant(false) : undefined;
+	    for (var ii = 0; ii < ids.length; ii++) {
+	      var id = ids[ii];
+	      if (this._isPending[id]) {
+	        !this._isHandled[id] ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.waitFor(...): Circular dependency detected while ' + 'waiting for `%s`.', id) : invariant(false) : undefined;
+	        continue;
+	      }
+	      !this._callbacks[id] ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.waitFor(...): `%s` does not map to a registered callback.', id) : invariant(false) : undefined;
+	      this._invokeCallback(id);
+	    }
+	  };
+	
+	  /**
+	   * Dispatches a payload to all registered callbacks.
+	   */
+	
+	  Dispatcher.prototype.dispatch = function dispatch(payload) {
+	    !!this._isDispatching ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatch.dispatch(...): Cannot dispatch in the middle of a dispatch.') : invariant(false) : undefined;
+	    this._startDispatching(payload);
+	    try {
+	      for (var id in this._callbacks) {
+	        if (this._isPending[id]) {
+	          continue;
+	        }
+	        this._invokeCallback(id);
+	      }
+	    } finally {
+	      this._stopDispatching();
+	    }
+	  };
+	
+	  /**
+	   * Is this Dispatcher currently dispatching.
+	   */
+	
+	  Dispatcher.prototype.isDispatching = function isDispatching() {
+	    return this._isDispatching;
+	  };
+	
+	  /**
+	   * Call the callback stored with the given id. Also do some internal
+	   * bookkeeping.
+	   *
+	   * @internal
+	   */
+	
+	  Dispatcher.prototype._invokeCallback = function _invokeCallback(id) {
+	    this._isPending[id] = true;
+	    this._callbacks[id](this._pendingPayload);
+	    this._isHandled[id] = true;
+	  };
+	
+	  /**
+	   * Set up bookkeeping needed when dispatching.
+	   *
+	   * @internal
+	   */
+	
+	  Dispatcher.prototype._startDispatching = function _startDispatching(payload) {
+	    for (var id in this._callbacks) {
+	      this._isPending[id] = false;
+	      this._isHandled[id] = false;
+	    }
+	    this._pendingPayload = payload;
+	    this._isDispatching = true;
+	  };
+	
+	  /**
+	   * Clear bookkeeping used for dispatching.
+	   *
+	   * @internal
+	   */
+	
+	  Dispatcher.prototype._stopDispatching = function _stopDispatching() {
+	    delete this._pendingPayload;
+	    this._isDispatching = false;
+	  };
+	
+	  return Dispatcher;
+	})();
+	
+	module.exports = Dispatcher;
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+
+/***/ },
+/* 276 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * Copyright 2013-2015, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 * @providesModule invariant
+	 */
+	
+	"use strict";
+	
+	/**
+	 * Use invariant() to assert state which your program assumes to be true.
+	 *
+	 * Provide sprintf-style format (only %s is supported) and arguments
+	 * to provide information about what broke and what you were
+	 * expecting.
+	 *
+	 * The invariant message will be stripped in production, but the invariant
+	 * will remain to ensure logic does not differ in production.
+	 */
+	
+	var invariant = function (condition, format, a, b, c, d, e, f) {
+	  if (process.env.NODE_ENV !== 'production') {
+	    if (format === undefined) {
+	      throw new Error('invariant requires an error message argument');
+	    }
+	  }
+	
+	  if (!condition) {
+	    var error;
+	    if (format === undefined) {
+	      error = new Error('Minified exception occurred; use the non-minified dev environment ' + 'for the full error message and additional helpful warnings.');
+	    } else {
+	      var args = [a, b, c, d, e, f];
+	      var argIndex = 0;
+	      error = new Error('Invariant Violation: ' + format.replace(/%s/g, function () {
+	        return args[argIndex++];
+	      }));
+	    }
+	
+	    error.framesToPop = 1; // we don't care about invariant's own frame
+	    throw error;
+	  }
+	};
+	
+	module.exports = invariant;
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+
+/***/ },
+/* 277 */
+/***/ function(module, exports) {
+
+	/**
+	 * Copyright 2014-2015, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 * @providesModule Object.assign
+	 */
+	
+	// https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.assign
+	
+	'use strict';
+	
+	function assign(target, sources) {
+	  if (target == null) {
+	    throw new TypeError('Object.assign target cannot be null or undefined');
+	  }
+	
+	  var to = Object(target);
+	  var hasOwnProperty = Object.prototype.hasOwnProperty;
+	
+	  for (var nextIndex = 1; nextIndex < arguments.length; nextIndex++) {
+	    var nextSource = arguments[nextIndex];
+	    if (nextSource == null) {
+	      continue;
+	    }
+	
+	    var from = Object(nextSource);
+	
+	    // We don't currently support accessors nor proxies. Therefore this
+	    // copy cannot throw. If we ever supported this then we must handle
+	    // exceptions and side-effects. We don't support symbols so they won't
+	    // be transferred.
+	
+	    for (var key in from) {
+	      if (hasOwnProperty.call(from, key)) {
+	        to[key] = from[key];
+	      }
+	    }
+	  }
+	
+	  return to;
+	}
+	
+	module.exports = assign;
+
+
+/***/ },
+/* 278 */
+/***/ function(module, exports) {
+
+	// removed by extract-text-webpack-plugin
+
+/***/ },
+/* 279 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -34204,9 +34560,9 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var DataStore = (function () {
-		function DataStore(data) {
-			_classCallCheck(this, DataStore);
+	var LocationsStore = (function () {
+		function LocationsStore(data) {
+			_classCallCheck(this, LocationsStore);
 	
 			this.data = data;
 		}
@@ -34214,7 +34570,7 @@
 		// should not depend on data in order
 		// but for now just get the first one in the array
 	
-		_createClass(DataStore, [{
+		_createClass(LocationsStore, [{
 			key: "getLocationByName",
 			value: function getLocationByName(location_name) {
 				return this.getCurrentLocationItems(location_name)[0];
@@ -34257,13 +34613,417 @@
 			}
 		}]);
 	
-		return DataStore;
+		return LocationsStore;
 	})();
 	
-	module.exports = DataStore;
+	module.exports = LocationsStore;
 
 /***/ },
-/* 274 */
+/* 280 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+	
+	var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	var Constants = __webpack_require__(272);
+	var Dispatcher = __webpack_require__(273);
+	var EventEmitter = __webpack_require__(281).EventEmitter;
+	
+	var FavoritesStore = (function (_EventEmitter) {
+		_inherits(FavoritesStore, _EventEmitter);
+	
+		function FavoritesStore(resource) {
+			_classCallCheck(this, FavoritesStore);
+	
+			_get(Object.getPrototypeOf(FavoritesStore.prototype), 'constructor', this).call(this);
+			this.resource = resource;
+			this.registerDispatcher();
+		}
+	
+		_createClass(FavoritesStore, [{
+			key: 'emitChange',
+			value: function emitChange() {
+				this.emit('change');
+			}
+		}, {
+			key: 'addChangeListener',
+			value: function addChangeListener(callback) {
+				this.on('change', callback);
+			}
+		}, {
+			key: 'removeChangeListener',
+			value: function removeChangeListener(callback) {
+				this.removeChangeListener('change', callback);
+			}
+		}, {
+			key: 'add',
+			value: function add(location) {
+				this.resource.addFavorite(location);
+			}
+		}, {
+			key: 'remove',
+			value: function remove(location) {
+				this.resource.removeFavorite(location);
+			}
+		}, {
+			key: 'getFavorites',
+			value: function getFavorites() {
+				return this.resource.getFavorites();
+			}
+		}, {
+			key: 'isAddressInFavorites',
+			value: function isAddressInFavorites(location) {
+				return this.resource.isAddressInFavorites(location);
+			}
+		}, {
+			key: 'registerDispatcher',
+			value: function registerDispatcher() {
+				var _this = this;
+	
+				return Dispatcher.register(function (payload) {
+					var action = payload.action;
+	
+					switch (action.actionType) {
+						case Constants.ADD_FAVORITE:
+							_this.resource.addFavorite(payload.action.item);
+							break;
+	
+						case Constants.REMOVE_FAVORITE:
+							_this.resource.removeFavorite(payload.action.item);
+							break;
+	
+					}
+	
+					_this.emitChange();
+	
+					return true;
+				});
+			}
+		}]);
+	
+		return FavoritesStore;
+	})(EventEmitter);
+	
+	;
+	
+	module.exports = FavoritesStore;
+
+/***/ },
+/* 281 */
+/***/ function(module, exports) {
+
+	// Copyright Joyent, Inc. and other Node contributors.
+	//
+	// Permission is hereby granted, free of charge, to any person obtaining a
+	// copy of this software and associated documentation files (the
+	// "Software"), to deal in the Software without restriction, including
+	// without limitation the rights to use, copy, modify, merge, publish,
+	// distribute, sublicense, and/or sell copies of the Software, and to permit
+	// persons to whom the Software is furnished to do so, subject to the
+	// following conditions:
+	//
+	// The above copyright notice and this permission notice shall be included
+	// in all copies or substantial portions of the Software.
+	//
+	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+	// USE OR OTHER DEALINGS IN THE SOFTWARE.
+	
+	function EventEmitter() {
+	  this._events = this._events || {};
+	  this._maxListeners = this._maxListeners || undefined;
+	}
+	module.exports = EventEmitter;
+	
+	// Backwards-compat with node 0.10.x
+	EventEmitter.EventEmitter = EventEmitter;
+	
+	EventEmitter.prototype._events = undefined;
+	EventEmitter.prototype._maxListeners = undefined;
+	
+	// By default EventEmitters will print a warning if more than 10 listeners are
+	// added to it. This is a useful default which helps finding memory leaks.
+	EventEmitter.defaultMaxListeners = 10;
+	
+	// Obviously not all Emitters should be limited to 10. This function allows
+	// that to be increased. Set to zero for unlimited.
+	EventEmitter.prototype.setMaxListeners = function(n) {
+	  if (!isNumber(n) || n < 0 || isNaN(n))
+	    throw TypeError('n must be a positive number');
+	  this._maxListeners = n;
+	  return this;
+	};
+	
+	EventEmitter.prototype.emit = function(type) {
+	  var er, handler, len, args, i, listeners;
+	
+	  if (!this._events)
+	    this._events = {};
+	
+	  // If there is no 'error' event listener then throw.
+	  if (type === 'error') {
+	    if (!this._events.error ||
+	        (isObject(this._events.error) && !this._events.error.length)) {
+	      er = arguments[1];
+	      if (er instanceof Error) {
+	        throw er; // Unhandled 'error' event
+	      }
+	      throw TypeError('Uncaught, unspecified "error" event.');
+	    }
+	  }
+	
+	  handler = this._events[type];
+	
+	  if (isUndefined(handler))
+	    return false;
+	
+	  if (isFunction(handler)) {
+	    switch (arguments.length) {
+	      // fast cases
+	      case 1:
+	        handler.call(this);
+	        break;
+	      case 2:
+	        handler.call(this, arguments[1]);
+	        break;
+	      case 3:
+	        handler.call(this, arguments[1], arguments[2]);
+	        break;
+	      // slower
+	      default:
+	        len = arguments.length;
+	        args = new Array(len - 1);
+	        for (i = 1; i < len; i++)
+	          args[i - 1] = arguments[i];
+	        handler.apply(this, args);
+	    }
+	  } else if (isObject(handler)) {
+	    len = arguments.length;
+	    args = new Array(len - 1);
+	    for (i = 1; i < len; i++)
+	      args[i - 1] = arguments[i];
+	
+	    listeners = handler.slice();
+	    len = listeners.length;
+	    for (i = 0; i < len; i++)
+	      listeners[i].apply(this, args);
+	  }
+	
+	  return true;
+	};
+	
+	EventEmitter.prototype.addListener = function(type, listener) {
+	  var m;
+	
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+	
+	  if (!this._events)
+	    this._events = {};
+	
+	  // To avoid recursion in the case that type === "newListener"! Before
+	  // adding it to the listeners, first emit "newListener".
+	  if (this._events.newListener)
+	    this.emit('newListener', type,
+	              isFunction(listener.listener) ?
+	              listener.listener : listener);
+	
+	  if (!this._events[type])
+	    // Optimize the case of one listener. Don't need the extra array object.
+	    this._events[type] = listener;
+	  else if (isObject(this._events[type]))
+	    // If we've already got an array, just append.
+	    this._events[type].push(listener);
+	  else
+	    // Adding the second element, need to change to array.
+	    this._events[type] = [this._events[type], listener];
+	
+	  // Check for listener leak
+	  if (isObject(this._events[type]) && !this._events[type].warned) {
+	    var m;
+	    if (!isUndefined(this._maxListeners)) {
+	      m = this._maxListeners;
+	    } else {
+	      m = EventEmitter.defaultMaxListeners;
+	    }
+	
+	    if (m && m > 0 && this._events[type].length > m) {
+	      this._events[type].warned = true;
+	      console.error('(node) warning: possible EventEmitter memory ' +
+	                    'leak detected. %d listeners added. ' +
+	                    'Use emitter.setMaxListeners() to increase limit.',
+	                    this._events[type].length);
+	      if (typeof console.trace === 'function') {
+	        // not supported in IE 10
+	        console.trace();
+	      }
+	    }
+	  }
+	
+	  return this;
+	};
+	
+	EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+	
+	EventEmitter.prototype.once = function(type, listener) {
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+	
+	  var fired = false;
+	
+	  function g() {
+	    this.removeListener(type, g);
+	
+	    if (!fired) {
+	      fired = true;
+	      listener.apply(this, arguments);
+	    }
+	  }
+	
+	  g.listener = listener;
+	  this.on(type, g);
+	
+	  return this;
+	};
+	
+	// emits a 'removeListener' event iff the listener was removed
+	EventEmitter.prototype.removeListener = function(type, listener) {
+	  var list, position, length, i;
+	
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+	
+	  if (!this._events || !this._events[type])
+	    return this;
+	
+	  list = this._events[type];
+	  length = list.length;
+	  position = -1;
+	
+	  if (list === listener ||
+	      (isFunction(list.listener) && list.listener === listener)) {
+	    delete this._events[type];
+	    if (this._events.removeListener)
+	      this.emit('removeListener', type, listener);
+	
+	  } else if (isObject(list)) {
+	    for (i = length; i-- > 0;) {
+	      if (list[i] === listener ||
+	          (list[i].listener && list[i].listener === listener)) {
+	        position = i;
+	        break;
+	      }
+	    }
+	
+	    if (position < 0)
+	      return this;
+	
+	    if (list.length === 1) {
+	      list.length = 0;
+	      delete this._events[type];
+	    } else {
+	      list.splice(position, 1);
+	    }
+	
+	    if (this._events.removeListener)
+	      this.emit('removeListener', type, listener);
+	  }
+	
+	  return this;
+	};
+	
+	EventEmitter.prototype.removeAllListeners = function(type) {
+	  var key, listeners;
+	
+	  if (!this._events)
+	    return this;
+	
+	  // not listening for removeListener, no need to emit
+	  if (!this._events.removeListener) {
+	    if (arguments.length === 0)
+	      this._events = {};
+	    else if (this._events[type])
+	      delete this._events[type];
+	    return this;
+	  }
+	
+	  // emit removeListener for all listeners on all events
+	  if (arguments.length === 0) {
+	    for (key in this._events) {
+	      if (key === 'removeListener') continue;
+	      this.removeAllListeners(key);
+	    }
+	    this.removeAllListeners('removeListener');
+	    this._events = {};
+	    return this;
+	  }
+	
+	  listeners = this._events[type];
+	
+	  if (isFunction(listeners)) {
+	    this.removeListener(type, listeners);
+	  } else {
+	    // LIFO order
+	    while (listeners.length)
+	      this.removeListener(type, listeners[listeners.length - 1]);
+	  }
+	  delete this._events[type];
+	
+	  return this;
+	};
+	
+	EventEmitter.prototype.listeners = function(type) {
+	  var ret;
+	  if (!this._events || !this._events[type])
+	    ret = [];
+	  else if (isFunction(this._events[type]))
+	    ret = [this._events[type]];
+	  else
+	    ret = this._events[type].slice();
+	  return ret;
+	};
+	
+	EventEmitter.listenerCount = function(emitter, type) {
+	  var ret;
+	  if (!emitter._events || !emitter._events[type])
+	    ret = 0;
+	  else if (isFunction(emitter._events[type]))
+	    ret = 1;
+	  else
+	    ret = emitter._events[type].length;
+	  return ret;
+	};
+	
+	function isFunction(arg) {
+	  return typeof arg === 'function';
+	}
+	
+	function isNumber(arg) {
+	  return typeof arg === 'number';
+	}
+	
+	function isObject(arg) {
+	  return typeof arg === 'object' && arg !== null;
+	}
+	
+	function isUndefined(arg) {
+	  return arg === void 0;
+	}
+
+
+/***/ },
+/* 282 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -34272,29 +35032,22 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 	
-	var FavoritesStore = (function () {
-		function FavoritesStore() {
-			_classCallCheck(this, FavoritesStore);
+	var FavoritesResource = (function () {
+		function FavoritesResource(localStorage) {
+			_classCallCheck(this, FavoritesResource);
 	
 			this.localStorage = localStorage;
 		}
 	
-		// for now init here !
-	
-		_createClass(FavoritesStore, [{
-			key: 'getAll',
-			value: function getAll() {
-				return JSON.parse(this.localStorage.getItem('favorites')) || [];
-			}
-		}, {
+		_createClass(FavoritesResource, [{
 			key: 'isAddressInFavorites',
 			value: function isAddressInFavorites(address) {
-				return this.getByAddress(address) !== null;
+				return this._getByAddress(address) !== null;
 			}
 		}, {
-			key: 'getByAddress',
-			value: function getByAddress(address) {
-				var favorites = this.getAll();
+			key: '_getByAddress',
+			value: function _getByAddress(address) {
+				var favorites = this.getFavorites();
 				var result = null;
 	
 				favorites.some(function (loc) {
@@ -34307,14 +35060,19 @@
 				return result;
 			}
 		}, {
-			key: 'updateStorage',
-			value: function updateStorage(favorites) {
+			key: '_updateStorage',
+			value: function _updateStorage(favorites) {
 				this.localStorage.setItem('favorites', JSON.stringify(favorites));
 			}
 		}, {
-			key: 'add',
-			value: function add(location) {
-				var favorites = this.getAll();
+			key: 'getFavorites',
+			value: function getFavorites() {
+				return JSON.parse(this.localStorage.getItem('favorites')) || [];
+			}
+		}, {
+			key: 'addFavorite',
+			value: function addFavorite(location) {
+				var favorites = this.getFavorites();
 	
 				if (!this.isAddressInFavorites(location.address)) {
 					favorites.push({
@@ -34325,14 +35083,14 @@
 						timestamp: Date.now()
 					});
 	
-					this.updateStorage(favorites);
+					this._updateStorage(favorites);
 				}
 			}
 		}, {
-			key: 'remove',
-			value: function remove(location) {
+			key: 'removeFavorite',
+			value: function removeFavorite(location) {
 	
-				var favorites = this.getAll();
+				var favorites = this.getFavorites();
 				var index = -1;
 	
 				for (var i = 0; i < favorites.length; i++) {
@@ -34349,18 +35107,18 @@
 	
 					favorites.splice(index, 1);
 	
-					this.updateStorage(favorites);
+					this._updateStorage(favorites);
 				}
 			}
 		}]);
 	
-		return FavoritesStore;
+		return FavoritesResource;
 	})();
 	
-	module.exports = FavoritesStore;
+	module.exports = FavoritesResource;
 
 /***/ },
-/* 275 */
+/* 283 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -34399,7 +35157,7 @@
 	module.exports = StoreManager;
 
 /***/ },
-/* 276 */
+/* 284 */
 /***/ function(module, exports) {
 
 	"use strict";module.exports = [{"station_id":1438,"place_name":"Amsterdam","latitude":52.3,"longitude":4.766667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.2","temperature_min":"15.1","precipitation_probability":"90","precipitation_mm":"6.0"},{"station_id":1438,"place_name":"Amsterdam","latitude":52.3,"longitude":4.766667,"datetime":"2014-08-09 00:00:00","temperature_max":"23.0","temperature_min":"16.7","precipitation_probability":"70","precipitation_mm":"3.3"},{"station_id":1438,"place_name":"Amsterdam","latitude":52.3,"longitude":4.766667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.6","temperature_min":"14.8","precipitation_probability":"85","precipitation_mm":"11.8"},{"station_id":1438,"place_name":"Amsterdam","latitude":52.3,"longitude":4.766667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.8","temperature_min":"15.3","precipitation_probability":"75","precipitation_mm":"4.5"},{"station_id":1438,"place_name":"Amsterdam","latitude":52.3,"longitude":4.766667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.9","temperature_min":"14.2","precipitation_probability":"75","precipitation_mm":"6.6"},{"station_id":1439,"place_name":"Den Helder","latitude":52.91667,"longitude":4.783333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.5","temperature_min":"16.0","precipitation_probability":"90","precipitation_mm":"5.1"},{"station_id":1439,"place_name":"Den Helder","latitude":52.91667,"longitude":4.783333,"datetime":"2014-08-09 00:00:00","temperature_max":"21.8","temperature_min":"17.7","precipitation_probability":"65","precipitation_mm":"7.7"},{"station_id":1439,"place_name":"Den Helder","latitude":52.91667,"longitude":4.783333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.3","temperature_min":"14.8","precipitation_probability":"85","precipitation_mm":"9.8"},{"station_id":1439,"place_name":"Den Helder","latitude":52.91667,"longitude":4.783333,"datetime":"2014-08-11 00:00:00","temperature_max":"20.7","temperature_min":"16.7","precipitation_probability":"60","precipitation_mm":"2.4"},{"station_id":1439,"place_name":"Den Helder","latitude":52.91667,"longitude":4.783333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.2","temperature_min":"15.2","precipitation_probability":"75","precipitation_mm":"5.3"},{"station_id":1440,"place_name":"Groningen","latitude":53.21667,"longitude":6.583333,"datetime":"2014-08-08 00:00:00","temperature_max":"25.2","temperature_min":"10.3","precipitation_probability":"75","precipitation_mm":"8.3"},{"station_id":1440,"place_name":"Groningen","latitude":53.21667,"longitude":6.583333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.2","temperature_min":"16.7","precipitation_probability":"85","precipitation_mm":"14.2"},{"station_id":1440,"place_name":"Groningen","latitude":53.21667,"longitude":6.583333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.0","temperature_min":"13.8","precipitation_probability":"80","precipitation_mm":"10.1"},{"station_id":1440,"place_name":"Groningen","latitude":53.21667,"longitude":6.583333,"datetime":"2014-08-11 00:00:00","temperature_max":"22.5","temperature_min":"14.8","precipitation_probability":"70","precipitation_mm":"5.3"},{"station_id":1440,"place_name":"Groningen","latitude":53.21667,"longitude":6.583333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.6","temperature_min":"12.8","precipitation_probability":"85","precipitation_mm":"5.4"},{"station_id":1441,"place_name":"Leeuwarden","latitude":53.21667,"longitude":5.766667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.6","temperature_min":"10.8","precipitation_probability":"75","precipitation_mm":"5.0"},{"station_id":1441,"place_name":"Leeuwarden","latitude":53.21667,"longitude":5.766667,"datetime":"2014-08-09 00:00:00","temperature_max":"22.8","temperature_min":"16.7","precipitation_probability":"70","precipitation_mm":"12.1"},{"station_id":1441,"place_name":"Leeuwarden","latitude":53.21667,"longitude":5.766667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.6","temperature_min":"14.8","precipitation_probability":"65","precipitation_mm":"8.7"},{"station_id":1441,"place_name":"Leeuwarden","latitude":53.21667,"longitude":5.766667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"15.9","precipitation_probability":"60","precipitation_mm":"6.1"},{"station_id":1441,"place_name":"Leeuwarden","latitude":53.21667,"longitude":5.766667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.7","temperature_min":"14.4","precipitation_probability":"65","precipitation_mm":"6.2"},{"station_id":1442,"place_name":"Maastricht","latitude":50.91667,"longitude":5.783333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"16.2","precipitation_probability":"95","precipitation_mm":"5.9"},{"station_id":1442,"place_name":"Maastricht","latitude":50.91667,"longitude":5.783333,"datetime":"2014-08-09 00:00:00","temperature_max":"25.0","temperature_min":"16.7","precipitation_probability":"50","precipitation_mm":"9.3"},{"station_id":1442,"place_name":"Maastricht","latitude":50.91667,"longitude":5.783333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.9","temperature_min":"16.2","precipitation_probability":"90","precipitation_mm":"8.6"},{"station_id":1442,"place_name":"Maastricht","latitude":50.91667,"longitude":5.783333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.5","precipitation_probability":"70","precipitation_mm":"2.7"},{"station_id":1442,"place_name":"Maastricht","latitude":50.91667,"longitude":5.783333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"13.3","precipitation_probability":"75","precipitation_mm":"3.9"},{"station_id":1443,"place_name":"Rotterdam","latitude":51.95,"longitude":4.45,"datetime":"2014-08-08 00:00:00","temperature_max":"24.9","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"3.4"},{"station_id":1443,"place_name":"Rotterdam","latitude":51.95,"longitude":4.45,"datetime":"2014-08-09 00:00:00","temperature_max":"23.2","temperature_min":"16.6","precipitation_probability":"55","precipitation_mm":"5.4"},{"station_id":1443,"place_name":"Rotterdam","latitude":51.95,"longitude":4.45,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"15.3"},{"station_id":1443,"place_name":"Rotterdam","latitude":51.95,"longitude":4.45,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"15.3","precipitation_probability":"65","precipitation_mm":"6.5"},{"station_id":1443,"place_name":"Rotterdam","latitude":51.95,"longitude":4.45,"datetime":"2014-08-12 00:00:00","temperature_max":"21.0","temperature_min":"14.4","precipitation_probability":"75","precipitation_mm":"6.6"},{"station_id":1444,"place_name":"Enschede","latitude":52.21667,"longitude":6.9,"datetime":"2014-08-08 00:00:00","temperature_max":"25.4","temperature_min":"11.8","precipitation_probability":"65","precipitation_mm":"6.6"},{"station_id":1444,"place_name":"Enschede","latitude":52.21667,"longitude":6.9,"datetime":"2014-08-09 00:00:00","temperature_max":"25.0","temperature_min":"16.6","precipitation_probability":"50","precipitation_mm":"7.8"},{"station_id":1444,"place_name":"Enschede","latitude":52.21667,"longitude":6.9,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"14.0","precipitation_probability":"70","precipitation_mm":"8.6"},{"station_id":1444,"place_name":"Enschede","latitude":52.21667,"longitude":6.9,"datetime":"2014-08-11 00:00:00","temperature_max":"22.1","temperature_min":"14.3","precipitation_probability":"65","precipitation_mm":"6.2"},{"station_id":1444,"place_name":"Enschede","latitude":52.21667,"longitude":6.9,"datetime":"2014-08-12 00:00:00","temperature_max":"21.4","temperature_min":"13.5","precipitation_probability":"65","precipitation_mm":"5.5"},{"station_id":1445,"place_name":"Utrecht","latitude":52.1,"longitude":5.183333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"14.1","precipitation_probability":"90","precipitation_mm":"9.1"},{"station_id":1445,"place_name":"Utrecht","latitude":52.1,"longitude":5.183333,"datetime":"2014-08-09 00:00:00","temperature_max":"23.8","temperature_min":"16.4","precipitation_probability":"80","precipitation_mm":"4.8"},{"station_id":1445,"place_name":"Utrecht","latitude":52.1,"longitude":5.183333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"14.3","precipitation_probability":"90","precipitation_mm":"10.2"},{"station_id":1445,"place_name":"Utrecht","latitude":52.1,"longitude":5.183333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.8","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"2.8"},{"station_id":1445,"place_name":"Utrecht","latitude":52.1,"longitude":5.183333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"13.7","precipitation_probability":"80","precipitation_mm":"5.2"},{"station_id":1446,"place_name":"Vlissingen","latitude":51.45,"longitude":3.6,"datetime":"2014-08-08 00:00:00","temperature_max":"23.1","temperature_min":"17.9","precipitation_probability":"90","precipitation_mm":"6.1"},{"station_id":1446,"place_name":"Vlissingen","latitude":51.45,"longitude":3.6,"datetime":"2014-08-09 00:00:00","temperature_max":"22.2","temperature_min":"16.7","precipitation_probability":"50","precipitation_mm":"2.3"},{"station_id":1446,"place_name":"Vlissingen","latitude":51.45,"longitude":3.6,"datetime":"2014-08-10 00:00:00","temperature_max":"24.6","temperature_min":"17.4","precipitation_probability":"90","precipitation_mm":"9.3"},{"station_id":1446,"place_name":"Vlissingen","latitude":51.45,"longitude":3.6,"datetime":"2014-08-11 00:00:00","temperature_max":"20.2","temperature_min":"15.4","precipitation_probability":"80","precipitation_mm":"2.0"},{"station_id":1446,"place_name":"Vlissingen","latitude":51.45,"longitude":3.6,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"15.3","precipitation_probability":"70","precipitation_mm":"4.2"},{"station_id":1447,"place_name":"Berkhout","latitude":52.65,"longitude":4.983333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.5","temperature_min":"12.8","precipitation_probability":"85","precipitation_mm":"3.1"},{"station_id":1447,"place_name":"Berkhout","latitude":52.65,"longitude":4.983333,"datetime":"2014-08-09 00:00:00","temperature_max":"22.9","temperature_min":"17.8","precipitation_probability":"65","precipitation_mm":"9.4"},{"station_id":1447,"place_name":"Berkhout","latitude":52.65,"longitude":4.983333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.8","temperature_min":"14.7","precipitation_probability":"85","precipitation_mm":"9.4"},{"station_id":1447,"place_name":"Berkhout","latitude":52.65,"longitude":4.983333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.2","temperature_min":"15.1","precipitation_probability":"75","precipitation_mm":"4.4"},{"station_id":1447,"place_name":"Berkhout","latitude":52.65,"longitude":4.983333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.4","temperature_min":"13.4","precipitation_probability":"85","precipitation_mm":"8.2"},{"station_id":1448,"place_name":"Wijk Aan Zee","latitude":52.5,"longitude":4.6,"datetime":"2014-08-08 00:00:00","temperature_max":"25.5","temperature_min":"13.8","precipitation_probability":"95","precipitation_mm":"3.9"},{"station_id":1448,"place_name":"Wijk Aan Zee","latitude":52.5,"longitude":4.6,"datetime":"2014-08-09 00:00:00","temperature_max":"22.1","temperature_min":"16.5","precipitation_probability":"60","precipitation_mm":"3.1"},{"station_id":1448,"place_name":"Wijk Aan Zee","latitude":52.5,"longitude":4.6,"datetime":"2014-08-10 00:00:00","temperature_max":"28.7","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"5.4"},{"station_id":1448,"place_name":"Wijk Aan Zee","latitude":52.5,"longitude":4.6,"datetime":"2014-08-11 00:00:00","temperature_max":"21.5","temperature_min":"16.1","precipitation_probability":"70","precipitation_mm":"3.6"},{"station_id":1448,"place_name":"Wijk Aan Zee","latitude":52.5,"longitude":4.6,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"15.5","precipitation_probability":"70","precipitation_mm":"3.6"},{"station_id":1449,"place_name":"Stavoren","latitude":52.88334,"longitude":5.35,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"13.2","precipitation_probability":"90","precipitation_mm":"6.0"},{"station_id":1449,"place_name":"Stavoren","latitude":52.88334,"longitude":5.35,"datetime":"2014-08-09 00:00:00","temperature_max":"22.4","temperature_min":"18.0","precipitation_probability":"60","precipitation_mm":"8.1"},{"station_id":1449,"place_name":"Stavoren","latitude":52.88334,"longitude":5.35,"datetime":"2014-08-10 00:00:00","temperature_max":"25.8","temperature_min":"14.9","precipitation_probability":"70","precipitation_mm":"3.8"},{"station_id":1449,"place_name":"Stavoren","latitude":52.88334,"longitude":5.35,"datetime":"2014-08-11 00:00:00","temperature_max":"20.8","temperature_min":"16.9","precipitation_probability":"55","precipitation_mm":"5.4"},{"station_id":1449,"place_name":"Stavoren","latitude":52.88334,"longitude":5.35,"datetime":"2014-08-12 00:00:00","temperature_max":"20.4","temperature_min":"15.8","precipitation_probability":"70","precipitation_mm":"5.8"},{"station_id":1450,"place_name":"Heino","latitude":52.43333,"longitude":6.266667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.7","temperature_min":"12.6","precipitation_probability":"95","precipitation_mm":"20.4"},{"station_id":1450,"place_name":"Heino","latitude":52.43333,"longitude":6.266667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.3","temperature_min":"16.4","precipitation_probability":"70","precipitation_mm":"14.1"},{"station_id":1450,"place_name":"Heino","latitude":52.43333,"longitude":6.266667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.1","temperature_min":"14.4","precipitation_probability":"80","precipitation_mm":"15.1"},{"station_id":1450,"place_name":"Heino","latitude":52.43333,"longitude":6.266667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.7","temperature_min":"14.3","precipitation_probability":"75","precipitation_mm":"6.8"},{"station_id":1450,"place_name":"Heino","latitude":52.43333,"longitude":6.266667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.3","temperature_min":"13.4","precipitation_probability":"75","precipitation_mm":"3.7"},{"station_id":1451,"place_name":"Nieuw Beerta","latitude":53.2,"longitude":7.15,"datetime":"2014-08-08 00:00:00","temperature_max":"25.5","temperature_min":"11.6","precipitation_probability":"65","precipitation_mm":"9.7"},{"station_id":1451,"place_name":"Nieuw Beerta","latitude":53.2,"longitude":7.15,"datetime":"2014-08-09 00:00:00","temperature_max":"25.3","temperature_min":"17.1","precipitation_probability":"90","precipitation_mm":"16.2"},{"station_id":1451,"place_name":"Nieuw Beerta","latitude":53.2,"longitude":7.15,"datetime":"2014-08-10 00:00:00","temperature_max":"28.2","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"6.3"},{"station_id":1451,"place_name":"Nieuw Beerta","latitude":53.2,"longitude":7.15,"datetime":"2014-08-11 00:00:00","temperature_max":"23.2","temperature_min":"15.0","precipitation_probability":"75","precipitation_mm":"6.0"},{"station_id":1451,"place_name":"Nieuw Beerta","latitude":53.2,"longitude":7.15,"datetime":"2014-08-12 00:00:00","temperature_max":"21.7","temperature_min":"13.3","precipitation_probability":"85","precipitation_mm":"3.7"},{"station_id":1452,"place_name":"Westdorpe","latitude":51.23333,"longitude":3.833333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.6","temperature_min":"15.7","precipitation_probability":"95","precipitation_mm":"6.3"},{"station_id":1452,"place_name":"Westdorpe","latitude":51.23333,"longitude":3.833333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.5","temperature_min":"15.9","precipitation_probability":"40","precipitation_mm":"4.0"},{"station_id":1452,"place_name":"Westdorpe","latitude":51.23333,"longitude":3.833333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"13.3","precipitation_probability":"90","precipitation_mm":"10.7"},{"station_id":1452,"place_name":"Westdorpe","latitude":51.23333,"longitude":3.833333,"datetime":"2014-08-11 00:00:00","temperature_max":"20.6","temperature_min":"14.2","precipitation_probability":"90","precipitation_mm":"5.9"},{"station_id":1452,"place_name":"Westdorpe","latitude":51.23333,"longitude":3.833333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.6","temperature_min":"13.5","precipitation_probability":"70","precipitation_mm":"4.6"},{"station_id":1453,"place_name":"Le Goeree","latitude":51.93333,"longitude":3.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"22.0","temperature_min":"16.9","precipitation_probability":"90","precipitation_mm":"3.2"},{"station_id":1453,"place_name":"Le Goeree","latitude":51.93333,"longitude":3.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"21.4","temperature_min":"17.4","precipitation_probability":"45","precipitation_mm":"2.5"},{"station_id":1453,"place_name":"Le Goeree","latitude":51.93333,"longitude":3.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"24.2","temperature_min":"17.3","precipitation_probability":"85","precipitation_mm":"5.3"},{"station_id":1453,"place_name":"Le Goeree","latitude":51.93333,"longitude":3.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"19.7","temperature_min":"16.2","precipitation_probability":"65","precipitation_mm":"3.0"},{"station_id":1453,"place_name":"Le Goeree","latitude":51.93333,"longitude":3.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.3","temperature_min":"15.8","precipitation_probability":"70","precipitation_mm":"4.6"},{"station_id":1454,"place_name":"Wilhelminadorp","latitude":51.53333,"longitude":3.9,"datetime":"2014-08-08 00:00:00","temperature_max":"23.8","temperature_min":"16.7","precipitation_probability":"95","precipitation_mm":"4.5"},{"station_id":1454,"place_name":"Wilhelminadorp","latitude":51.53333,"longitude":3.9,"datetime":"2014-08-09 00:00:00","temperature_max":"22.9","temperature_min":"16.4","precipitation_probability":"60","precipitation_mm":"1.7"},{"station_id":1454,"place_name":"Wilhelminadorp","latitude":51.53333,"longitude":3.9,"datetime":"2014-08-10 00:00:00","temperature_max":"26.2","temperature_min":"14.4","precipitation_probability":"85","precipitation_mm":"7.1"},{"station_id":1454,"place_name":"Wilhelminadorp","latitude":51.53333,"longitude":3.9,"datetime":"2014-08-11 00:00:00","temperature_max":"22.4","temperature_min":"14.0","precipitation_probability":"85","precipitation_mm":"3.2"},{"station_id":1454,"place_name":"Wilhelminadorp","latitude":51.53333,"longitude":3.9,"datetime":"2014-08-12 00:00:00","temperature_max":"21.4","temperature_min":"13.5","precipitation_probability":"75","precipitation_mm":"5.6"},{"station_id":1455,"place_name":"Hoek Van Holland","latitude":51.98333,"longitude":4.1,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"16.5","precipitation_probability":"95","precipitation_mm":"1.6"},{"station_id":1455,"place_name":"Hoek Van Holland","latitude":51.98333,"longitude":4.1,"datetime":"2014-08-09 00:00:00","temperature_max":"22.5","temperature_min":"17.4","precipitation_probability":"55","precipitation_mm":"2.6"},{"station_id":1455,"place_name":"Hoek Van Holland","latitude":51.98333,"longitude":4.1,"datetime":"2014-08-10 00:00:00","temperature_max":"28.0","temperature_min":"15.5","precipitation_probability":"85","precipitation_mm":"10.5"},{"station_id":1455,"place_name":"Hoek Van Holland","latitude":51.98333,"longitude":4.1,"datetime":"2014-08-11 00:00:00","temperature_max":"20.2","temperature_min":"15.8","precipitation_probability":"75","precipitation_mm":"3.6"},{"station_id":1455,"place_name":"Hoek Van Holland","latitude":51.98333,"longitude":4.1,"datetime":"2014-08-12 00:00:00","temperature_max":"21.3","temperature_min":"15.3","precipitation_probability":"70","precipitation_mm":"7.5"},{"station_id":1456,"place_name":"Cabauw","latitude":51.96667,"longitude":4.933333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.5","temperature_min":"15.4","precipitation_probability":"95","precipitation_mm":"5.5"},{"station_id":1456,"place_name":"Cabauw","latitude":51.96667,"longitude":4.933333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.4","temperature_min":"15.8","precipitation_probability":"55","precipitation_mm":"6.1"},{"station_id":1456,"place_name":"Cabauw","latitude":51.96667,"longitude":4.933333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.3","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"4.9"},{"station_id":1456,"place_name":"Cabauw","latitude":51.96667,"longitude":4.933333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.9","temperature_min":"14.4","precipitation_probability":"70","precipitation_mm":"3.0"},{"station_id":1456,"place_name":"Cabauw","latitude":51.96667,"longitude":4.933333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.2","temperature_min":"13.4","precipitation_probability":"80","precipitation_mm":"3.2"},{"station_id":1457,"place_name":"Herwijnen","latitude":51.86666,"longitude":5.15,"datetime":"2014-08-08 00:00:00","temperature_max":"23.6","temperature_min":"15.3","precipitation_probability":"90","precipitation_mm":"4.5"},{"station_id":1457,"place_name":"Herwijnen","latitude":51.86666,"longitude":5.15,"datetime":"2014-08-09 00:00:00","temperature_max":"23.6","temperature_min":"16.0","precipitation_probability":"70","precipitation_mm":"11.7"},{"station_id":1457,"place_name":"Herwijnen","latitude":51.86666,"longitude":5.15,"datetime":"2014-08-10 00:00:00","temperature_max":"26.4","temperature_min":"14.5","precipitation_probability":"90","precipitation_mm":"5.3"},{"station_id":1457,"place_name":"Herwijnen","latitude":51.86666,"longitude":5.15,"datetime":"2014-08-11 00:00:00","temperature_max":"21.2","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"4.9"},{"station_id":1457,"place_name":"Herwijnen","latitude":51.86666,"longitude":5.15,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"13.3","precipitation_probability":"80","precipitation_mm":"5.8"},{"station_id":1458,"place_name":"Arcen","latitude":51.5,"longitude":6.2,"datetime":"2014-08-08 00:00:00","temperature_max":"25.5","temperature_min":"15.0","precipitation_probability":"95","precipitation_mm":"28.0"},{"station_id":1458,"place_name":"Arcen","latitude":51.5,"longitude":6.2,"datetime":"2014-08-09 00:00:00","temperature_max":"25.2","temperature_min":"17.6","precipitation_probability":"70","precipitation_mm":"8.2"},{"station_id":1458,"place_name":"Arcen","latitude":51.5,"longitude":6.2,"datetime":"2014-08-10 00:00:00","temperature_max":"26.6","temperature_min":"15.9","precipitation_probability":"85","precipitation_mm":"4.8"},{"station_id":1458,"place_name":"Arcen","latitude":51.5,"longitude":6.2,"datetime":"2014-08-11 00:00:00","temperature_max":"22.5","temperature_min":"14.7","precipitation_probability":"65","precipitation_mm":"5.0"},{"station_id":1458,"place_name":"Arcen","latitude":51.5,"longitude":6.2,"datetime":"2014-08-12 00:00:00","temperature_max":"20.8","temperature_min":"13.5","precipitation_probability":"70","precipitation_mm":"4.5"},{"station_id":1459,"place_name":"Leiden","latitude":52.18333,"longitude":4.416667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.2","temperature_min":"15.1","precipitation_probability":"95","precipitation_mm":"3.7"},{"station_id":1459,"place_name":"Leiden","latitude":52.18333,"longitude":4.416667,"datetime":"2014-08-09 00:00:00","temperature_max":"21.8","temperature_min":"16.8","precipitation_probability":"65","precipitation_mm":"4.5"},{"station_id":1459,"place_name":"Leiden","latitude":52.18333,"longitude":4.416667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.6","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"9.1"},{"station_id":1459,"place_name":"Leiden","latitude":52.18333,"longitude":4.416667,"datetime":"2014-08-11 00:00:00","temperature_max":"20.9","temperature_min":"14.5","precipitation_probability":"75","precipitation_mm":"4.8"},{"station_id":1459,"place_name":"Leiden","latitude":52.18333,"longitude":4.416667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"14.6","precipitation_probability":"70","precipitation_mm":"5.1"},{"station_id":1460,"place_name":"Amersfoort","latitude":52.13334,"longitude":5.283333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.0","temperature_min":"13.6","precipitation_probability":"60","precipitation_mm":"8.5"},{"station_id":1460,"place_name":"Amersfoort","latitude":52.13334,"longitude":5.283333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.2","temperature_min":"15.6","precipitation_probability":"35","precipitation_mm":"5.2"},{"station_id":1460,"place_name":"Amersfoort","latitude":52.13334,"longitude":5.283333,"datetime":"2014-08-10 00:00:00","temperature_max":"27.2","temperature_min":"13.5","precipitation_probability":"70","precipitation_mm":"8.8"},{"station_id":1460,"place_name":"Amersfoort","latitude":52.13334,"longitude":5.283333,"datetime":"2014-08-11 00:00:00","temperature_max":"22.2","temperature_min":"13.5","precipitation_probability":"15","precipitation_mm":"1.7"},{"station_id":1460,"place_name":"Amersfoort","latitude":52.13334,"longitude":5.283333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.4","temperature_min":"13.1","precipitation_probability":"45","precipitation_mm":"3.3"},{"station_id":1461,"place_name":"Arnhem","latitude":51.98333,"longitude":5.916667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"13.7","precipitation_probability":"95","precipitation_mm":"25.7"},{"station_id":1461,"place_name":"Arnhem","latitude":51.98333,"longitude":5.916667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.0","temperature_min":"16.1","precipitation_probability":"75","precipitation_mm":"9.1"},{"station_id":1461,"place_name":"Arnhem","latitude":51.98333,"longitude":5.916667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.3","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"8.2"},{"station_id":1461,"place_name":"Arnhem","latitude":51.98333,"longitude":5.916667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.7","precipitation_probability":"80","precipitation_mm":"5.0"},{"station_id":1461,"place_name":"Arnhem","latitude":51.98333,"longitude":5.916667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.4","temperature_min":"12.6","precipitation_probability":"70","precipitation_mm":"6.1"},{"station_id":1462,"place_name":"Woensdrecht","latitude":51.45,"longitude":4.333333,"datetime":"2014-08-08 00:00:00","temperature_max":"22.9","temperature_min":"15.1","precipitation_probability":"95","precipitation_mm":"5.6"},{"station_id":1462,"place_name":"Woensdrecht","latitude":51.45,"longitude":4.333333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.4","temperature_min":"16.0","precipitation_probability":"55","precipitation_mm":"2.3"},{"station_id":1462,"place_name":"Woensdrecht","latitude":51.45,"longitude":4.333333,"datetime":"2014-08-10 00:00:00","temperature_max":"27.2","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"6.1"},{"station_id":1462,"place_name":"Woensdrecht","latitude":51.45,"longitude":4.333333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.4","temperature_min":"14.0","precipitation_probability":"55","precipitation_mm":"2.5"},{"station_id":1462,"place_name":"Woensdrecht","latitude":51.45,"longitude":4.333333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"13.2","precipitation_probability":"80","precipitation_mm":"4.0"},{"station_id":1463,"place_name":"Tilburg","latitude":51.56667,"longitude":4.933333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.0","temperature_min":"15.2","precipitation_probability":"100","precipitation_mm":"6.8"},{"station_id":1463,"place_name":"Tilburg","latitude":51.56667,"longitude":4.933333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.5","temperature_min":"15.5","precipitation_probability":"60","precipitation_mm":"3.2"},{"station_id":1463,"place_name":"Tilburg","latitude":51.56667,"longitude":4.933333,"datetime":"2014-08-10 00:00:00","temperature_max":"27.4","temperature_min":"14.7","precipitation_probability":"85","precipitation_mm":"6.9"},{"station_id":1463,"place_name":"Tilburg","latitude":51.56667,"longitude":4.933333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"1.8"},{"station_id":1463,"place_name":"Tilburg","latitude":51.56667,"longitude":4.933333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"13.6","precipitation_probability":"75","precipitation_mm":"3.3"},{"station_id":1464,"place_name":"Eindhoven","latitude":51.45,"longitude":5.416667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"17.0","precipitation_probability":"95","precipitation_mm":"8.0"},{"station_id":1464,"place_name":"Eindhoven","latitude":51.45,"longitude":5.416667,"datetime":"2014-08-09 00:00:00","temperature_max":"25.2","temperature_min":"16.3","precipitation_probability":"55","precipitation_mm":"6.2"},{"station_id":1464,"place_name":"Eindhoven","latitude":51.45,"longitude":5.416667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.6","temperature_min":"15.2","precipitation_probability":"80","precipitation_mm":"7.2"},{"station_id":1464,"place_name":"Eindhoven","latitude":51.45,"longitude":5.416667,"datetime":"2014-08-11 00:00:00","temperature_max":"22.3","temperature_min":"14.3","precipitation_probability":"75","precipitation_mm":"3.6"},{"station_id":1464,"place_name":"Eindhoven","latitude":51.45,"longitude":5.416667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.6","temperature_min":"12.9","precipitation_probability":"80","precipitation_mm":"5.2"},{"station_id":1465,"place_name":"Volkel","latitude":51.65,"longitude":5.65,"datetime":"2014-08-08 00:00:00","temperature_max":"23.7","temperature_min":"13.5","precipitation_probability":"90","precipitation_mm":"12.9"},{"station_id":1465,"place_name":"Volkel","latitude":51.65,"longitude":5.65,"datetime":"2014-08-09 00:00:00","temperature_max":"24.9","temperature_min":"16.4","precipitation_probability":"60","precipitation_mm":"10.0"},{"station_id":1465,"place_name":"Volkel","latitude":51.65,"longitude":5.65,"datetime":"2014-08-10 00:00:00","temperature_max":"26.4","temperature_min":"14.4","precipitation_probability":"85","precipitation_mm":"1.2"},{"station_id":1465,"place_name":"Volkel","latitude":51.65,"longitude":5.65,"datetime":"2014-08-11 00:00:00","temperature_max":"21.8","temperature_min":"13.9","precipitation_probability":"65","precipitation_mm":"1.1"},{"station_id":1465,"place_name":"Volkel","latitude":51.65,"longitude":5.65,"datetime":"2014-08-12 00:00:00","temperature_max":"20.9","temperature_min":"13.3","precipitation_probability":"80","precipitation_mm":"4.8"},{"station_id":1466,"place_name":"Vlieland","latitude":53.25,"longitude":4.916667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.3","temperature_min":"10.5","precipitation_probability":"95","precipitation_mm":"7.9"},{"station_id":1466,"place_name":"Vlieland","latitude":53.25,"longitude":4.916667,"datetime":"2014-08-09 00:00:00","temperature_max":"21.8","temperature_min":"17.4","precipitation_probability":"70","precipitation_mm":"8.9"},{"station_id":1466,"place_name":"Vlieland","latitude":53.25,"longitude":4.916667,"datetime":"2014-08-10 00:00:00","temperature_max":"24.7","temperature_min":"15.1","precipitation_probability":"75","precipitation_mm":"4.8"},{"station_id":1466,"place_name":"Vlieland","latitude":53.25,"longitude":4.916667,"datetime":"2014-08-11 00:00:00","temperature_max":"20.3","temperature_min":"16.2","precipitation_probability":"60","precipitation_mm":"2.8"},{"station_id":1466,"place_name":"Vlieland","latitude":53.25,"longitude":4.916667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.3","temperature_min":"15.6","precipitation_probability":"65","precipitation_mm":"5.3"},{"station_id":1467,"place_name":"Lelystad","latitude":52.45,"longitude":5.533333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.4","temperature_min":"12.7","precipitation_probability":"90","precipitation_mm":"6.2"},{"station_id":1467,"place_name":"Lelystad","latitude":52.45,"longitude":5.533333,"datetime":"2014-08-09 00:00:00","temperature_max":"23.9","temperature_min":"16.3","precipitation_probability":"60","precipitation_mm":"10.7"},{"station_id":1467,"place_name":"Lelystad","latitude":52.45,"longitude":5.533333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.4","temperature_min":"14.2","precipitation_probability":"90","precipitation_mm":"10.9"},{"station_id":1467,"place_name":"Lelystad","latitude":52.45,"longitude":5.533333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.9","temperature_min":"14.7","precipitation_probability":"75","precipitation_mm":"3.6"},{"station_id":1467,"place_name":"Lelystad","latitude":52.45,"longitude":5.533333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.0","temperature_min":"13.3","precipitation_probability":"80","precipitation_mm":"9.0"},{"station_id":1468,"place_name":"Lauwersoog","latitude":53.4167,"longitude":6.2,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"15.5","precipitation_probability":"70","precipitation_mm":"4.2"},{"station_id":1468,"place_name":"Lauwersoog","latitude":53.4167,"longitude":6.2,"datetime":"2014-08-09 00:00:00","temperature_max":"22.3","temperature_min":"17.4","precipitation_probability":"70","precipitation_mm":"14.3"},{"station_id":1468,"place_name":"Lauwersoog","latitude":53.4167,"longitude":6.2,"datetime":"2014-08-10 00:00:00","temperature_max":"25.6","temperature_min":"16.1","precipitation_probability":"85","precipitation_mm":"10.7"},{"station_id":1468,"place_name":"Lauwersoog","latitude":53.4167,"longitude":6.2,"datetime":"2014-08-11 00:00:00","temperature_max":"20.7","temperature_min":"16.6","precipitation_probability":"40","precipitation_mm":"4.5"},{"station_id":1468,"place_name":"Lauwersoog","latitude":53.4167,"longitude":6.2,"datetime":"2014-08-12 00:00:00","temperature_max":"20.1","temperature_min":"14.7","precipitation_probability":"65","precipitation_mm":"2.5"},{"station_id":1469,"place_name":"Terschelling","latitude":53.38334,"longitude":5.35,"datetime":"2014-08-08 00:00:00","temperature_max":"23.2","temperature_min":"8.4","precipitation_probability":"80","precipitation_mm":"10.7"},{"station_id":1469,"place_name":"Terschelling","latitude":53.38334,"longitude":5.35,"datetime":"2014-08-09 00:00:00","temperature_max":"22.3","temperature_min":"17.8","precipitation_probability":"65","precipitation_mm":"10.6"},{"station_id":1469,"place_name":"Terschelling","latitude":53.38334,"longitude":5.35,"datetime":"2014-08-10 00:00:00","temperature_max":"24.5","temperature_min":"14.8","precipitation_probability":"85","precipitation_mm":"6.8"},{"station_id":1469,"place_name":"Terschelling","latitude":53.38334,"longitude":5.35,"datetime":"2014-08-11 00:00:00","temperature_max":"20.5","temperature_min":"15.2","precipitation_probability":"50","precipitation_mm":"3.3"},{"station_id":1469,"place_name":"Terschelling","latitude":53.38334,"longitude":5.35,"datetime":"2014-08-12 00:00:00","temperature_max":"20.9","temperature_min":"14.6","precipitation_probability":"75","precipitation_mm":"5.2"},{"station_id":1470,"place_name":"Roermond","latitude":51.25,"longitude":6,"datetime":"2014-08-08 00:00:00","temperature_max":"24.7","temperature_min":"15.3","precipitation_probability":"95","precipitation_mm":"3.7"},{"station_id":1470,"place_name":"Roermond","latitude":51.25,"longitude":6,"datetime":"2014-08-09 00:00:00","temperature_max":"25.2","temperature_min":"17.4","precipitation_probability":"65","precipitation_mm":"7.4"},{"station_id":1470,"place_name":"Roermond","latitude":51.25,"longitude":6,"datetime":"2014-08-10 00:00:00","temperature_max":"26.4","temperature_min":"13.5","precipitation_probability":"85","precipitation_mm":"4.8"},{"station_id":1470,"place_name":"Roermond","latitude":51.25,"longitude":6,"datetime":"2014-08-11 00:00:00","temperature_max":"22.4","temperature_min":"14.1","precipitation_probability":"85","precipitation_mm":"2.3"},{"station_id":1470,"place_name":"Roermond","latitude":51.25,"longitude":6,"datetime":"2014-08-12 00:00:00","temperature_max":"21.9","temperature_min":"12.8","precipitation_probability":"60","precipitation_mm":"3.1"},{"station_id":1471,"place_name":"Eibergen","latitude":52.06667,"longitude":6.65,"datetime":"2014-08-08 00:00:00","temperature_max":"24.6","temperature_min":"11.8","precipitation_probability":"80","precipitation_mm":"15.8"},{"station_id":1471,"place_name":"Eibergen","latitude":52.06667,"longitude":6.65,"datetime":"2014-08-09 00:00:00","temperature_max":"25.0","temperature_min":"16.4","precipitation_probability":"50","precipitation_mm":"9.0"},{"station_id":1471,"place_name":"Eibergen","latitude":52.06667,"longitude":6.65,"datetime":"2014-08-10 00:00:00","temperature_max":"25.8","temperature_min":"14.5","precipitation_probability":"75","precipitation_mm":"4.7"},{"station_id":1471,"place_name":"Eibergen","latitude":52.06667,"longitude":6.65,"datetime":"2014-08-11 00:00:00","temperature_max":"21.7","temperature_min":"14.3","precipitation_probability":"80","precipitation_mm":"7.1"},{"station_id":1471,"place_name":"Eibergen","latitude":52.06667,"longitude":6.65,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"13.0","precipitation_probability":"75","precipitation_mm":"4.1"},{"station_id":1472,"place_name":"Noordwijk","latitude":52.26667,"longitude":4.3,"datetime":"2014-08-08 00:00:00","temperature_max":"23.2","temperature_min":"15.1","precipitation_probability":"95","precipitation_mm":"3.7"},{"station_id":1472,"place_name":"Noordwijk","latitude":52.26667,"longitude":4.3,"datetime":"2014-08-09 00:00:00","temperature_max":"21.8","temperature_min":"16.8","precipitation_probability":"65","precipitation_mm":"4.5"},{"station_id":1472,"place_name":"Noordwijk","latitude":52.26667,"longitude":4.3,"datetime":"2014-08-10 00:00:00","temperature_max":"25.6","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"9.1"},{"station_id":1472,"place_name":"Noordwijk","latitude":52.26667,"longitude":4.3,"datetime":"2014-08-11 00:00:00","temperature_max":"20.9","temperature_min":"14.5","precipitation_probability":"75","precipitation_mm":"4.8"},{"station_id":1472,"place_name":"Noordwijk","latitude":52.26667,"longitude":4.3,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"14.6","precipitation_probability":"70","precipitation_mm":"5.1"},{"station_id":1473,"place_name":"Meppel","latitude":52.66667,"longitude":6.25,"datetime":"2014-08-08 00:00:00","temperature_max":"25.2","temperature_min":"10.3","precipitation_probability":"75","precipitation_mm":"14.2"},{"station_id":1473,"place_name":"Meppel","latitude":52.66667,"longitude":6.25,"datetime":"2014-08-09 00:00:00","temperature_max":"24.2","temperature_min":"16.5","precipitation_probability":"80","precipitation_mm":"14.3"},{"station_id":1473,"place_name":"Meppel","latitude":52.66667,"longitude":6.25,"datetime":"2014-08-10 00:00:00","temperature_max":"25.1","temperature_min":"13.5","precipitation_probability":"70","precipitation_mm":"6.9"},{"station_id":1473,"place_name":"Meppel","latitude":52.66667,"longitude":6.25,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"14.3","precipitation_probability":"80","precipitation_mm":"6.3"},{"station_id":1473,"place_name":"Meppel","latitude":52.66667,"longitude":6.25,"datetime":"2014-08-12 00:00:00","temperature_max":"20.9","temperature_min":"12.5","precipitation_probability":"75","precipitation_mm":"6.9"},{"station_id":1474,"place_name":"F3 (Platf.)","latitude":54.85,"longitude":4.733333,"datetime":"2014-08-08 00:00:00","temperature_max":"18.9","temperature_min":"16.9","precipitation_probability":"35","precipitation_mm":"0.7"},{"station_id":1474,"place_name":"F3 (Platf.)","latitude":54.85,"longitude":4.733333,"datetime":"2014-08-09 00:00:00","temperature_max":"18.6","temperature_min":"16.9","precipitation_probability":"75","precipitation_mm":"11.6"},{"station_id":1474,"place_name":"F3 (Platf.)","latitude":54.85,"longitude":4.733333,"datetime":"2014-08-10 00:00:00","temperature_max":"20.5","temperature_min":"17.4","precipitation_probability":"75","precipitation_mm":"5.4"},{"station_id":1474,"place_name":"F3 (Platf.)","latitude":54.85,"longitude":4.733333,"datetime":"2014-08-11 00:00:00","temperature_max":"18.7","temperature_min":"17.6","precipitation_probability":"55","precipitation_mm":"4.0"},{"station_id":1474,"place_name":"F3 (Platf.)","latitude":54.85,"longitude":4.733333,"datetime":"2014-08-12 00:00:00","temperature_max":"18.2","temperature_min":"17.0","precipitation_probability":"65","precipitation_mm":"5.6"},{"station_id":1475,"place_name":"K13-A","latitude":53.21667,"longitude":3.216667,"datetime":"2014-08-08 00:00:00","temperature_max":"NULL","temperature_min":"NULL","precipitation_probability":"NULL","precipitation_mm":"NULL"},{"station_id":1475,"place_name":"K13-A","latitude":53.21667,"longitude":3.216667,"datetime":"2014-08-09 00:00:00","temperature_max":"NULL","temperature_min":"NULL","precipitation_probability":"NULL","precipitation_mm":"NULL"},{"station_id":1475,"place_name":"K13-A","latitude":53.21667,"longitude":3.216667,"datetime":"2014-08-10 00:00:00","temperature_max":"NULL","temperature_min":"NULL","precipitation_probability":"NULL","precipitation_mm":"NULL"},{"station_id":1475,"place_name":"K13-A","latitude":53.21667,"longitude":3.216667,"datetime":"2014-08-11 00:00:00","temperature_max":"NULL","temperature_min":"NULL","precipitation_probability":"NULL","precipitation_mm":"NULL"},{"station_id":1475,"place_name":"K13-A","latitude":53.21667,"longitude":3.216667,"datetime":"2014-08-12 00:00:00","temperature_max":"NULL","temperature_min":"NULL","precipitation_probability":"NULL","precipitation_mm":"NULL"},{"station_id":1476,"place_name":"Euro Platform","latitude":52,"longitude":3.283333,"datetime":"2014-08-08 00:00:00","temperature_max":"20.7","temperature_min":"17.1","precipitation_probability":"85","precipitation_mm":"2.2"},{"station_id":1476,"place_name":"Euro Platform","latitude":52,"longitude":3.283333,"datetime":"2014-08-09 00:00:00","temperature_max":"19.7","temperature_min":"17.0","precipitation_probability":"25","precipitation_mm":"1.9"},{"station_id":1476,"place_name":"Euro Platform","latitude":52,"longitude":3.283333,"datetime":"2014-08-10 00:00:00","temperature_max":"20.5","temperature_min":"17.2","precipitation_probability":"75","precipitation_mm":"2.6"},{"station_id":1476,"place_name":"Euro Platform","latitude":52,"longitude":3.283333,"datetime":"2014-08-11 00:00:00","temperature_max":"18.5","temperature_min":"17.0","precipitation_probability":"50","precipitation_mm":"1.3"},{"station_id":1476,"place_name":"Euro Platform","latitude":52,"longitude":3.283333,"datetime":"2014-08-12 00:00:00","temperature_max":"18.2","temperature_min":"16.6","precipitation_probability":"45","precipitation_mm":"2.3"},{"station_id":1477,"place_name":"Den Haag","latitude":52.08333,"longitude":4.316667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.2","temperature_min":"15.1","precipitation_probability":"95","precipitation_mm":"3.7"},{"station_id":1477,"place_name":"Den Haag","latitude":52.08333,"longitude":4.316667,"datetime":"2014-08-09 00:00:00","temperature_max":"21.8","temperature_min":"16.8","precipitation_probability":"65","precipitation_mm":"4.5"},{"station_id":1477,"place_name":"Den Haag","latitude":52.08333,"longitude":4.316667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.6","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"9.1"},{"station_id":1477,"place_name":"Den Haag","latitude":52.08333,"longitude":4.316667,"datetime":"2014-08-11 00:00:00","temperature_max":"20.9","temperature_min":"14.5","precipitation_probability":"75","precipitation_mm":"4.8"},{"station_id":1477,"place_name":"Den Haag","latitude":52.08333,"longitude":4.316667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"14.6","precipitation_probability":"70","precipitation_mm":"5.1"},{"station_id":1478,"place_name":"Wageningen","latitude":51.96667,"longitude":5.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"13.7","precipitation_probability":"95","precipitation_mm":"25.7"},{"station_id":1478,"place_name":"Wageningen","latitude":51.96667,"longitude":5.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.0","temperature_min":"16.1","precipitation_probability":"75","precipitation_mm":"9.1"},{"station_id":1478,"place_name":"Wageningen","latitude":51.96667,"longitude":5.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.3","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"8.2"},{"station_id":1478,"place_name":"Wageningen","latitude":51.96667,"longitude":5.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.7","precipitation_probability":"80","precipitation_mm":"5.0"},{"station_id":1478,"place_name":"Wageningen","latitude":51.96667,"longitude":5.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.4","temperature_min":"12.6","precipitation_probability":"70","precipitation_mm":"6.1"},{"station_id":1479,"place_name":"Apeldoorn","latitude":52.21667,"longitude":5.966667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.8","temperature_min":"13.5","precipitation_probability":"95","precipitation_mm":"22.1"},{"station_id":1479,"place_name":"Apeldoorn","latitude":52.21667,"longitude":5.966667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.1","temperature_min":"16.4","precipitation_probability":"75","precipitation_mm":"10.8"},{"station_id":1479,"place_name":"Apeldoorn","latitude":52.21667,"longitude":5.966667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"14.5","precipitation_probability":"85","precipitation_mm":"8.1"},{"station_id":1479,"place_name":"Apeldoorn","latitude":52.21667,"longitude":5.966667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.4","temperature_min":"14.3","precipitation_probability":"75","precipitation_mm":"4.5"},{"station_id":1479,"place_name":"Apeldoorn","latitude":52.21667,"longitude":5.966667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.5","temperature_min":"13.1","precipitation_probability":"70","precipitation_mm":"5.7"},{"station_id":1480,"place_name":"Assen","latitude":53,"longitude":6.55,"datetime":"2014-08-08 00:00:00","temperature_max":"25.2","temperature_min":"10.3","precipitation_probability":"75","precipitation_mm":"8.3"},{"station_id":1480,"place_name":"Assen","latitude":53,"longitude":6.55,"datetime":"2014-08-09 00:00:00","temperature_max":"24.2","temperature_min":"16.7","precipitation_probability":"85","precipitation_mm":"14.2"},{"station_id":1480,"place_name":"Assen","latitude":53,"longitude":6.55,"datetime":"2014-08-10 00:00:00","temperature_max":"26.0","temperature_min":"13.8","precipitation_probability":"80","precipitation_mm":"10.1"},{"station_id":1480,"place_name":"Assen","latitude":53,"longitude":6.55,"datetime":"2014-08-11 00:00:00","temperature_max":"22.5","temperature_min":"14.8","precipitation_probability":"70","precipitation_mm":"5.3"},{"station_id":1480,"place_name":"Assen","latitude":53,"longitude":6.55,"datetime":"2014-08-12 00:00:00","temperature_max":"21.6","temperature_min":"12.8","precipitation_probability":"85","precipitation_mm":"5.4"},{"station_id":1481,"place_name":"Gouda","latitude":52,"longitude":4.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.9","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"3.4"},{"station_id":1481,"place_name":"Gouda","latitude":52,"longitude":4.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"23.2","temperature_min":"16.6","precipitation_probability":"55","precipitation_mm":"5.4"},{"station_id":1481,"place_name":"Gouda","latitude":52,"longitude":4.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"15.3"},{"station_id":1481,"place_name":"Gouda","latitude":52,"longitude":4.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"15.3","precipitation_probability":"65","precipitation_mm":"6.5"},{"station_id":1481,"place_name":"Gouda","latitude":52,"longitude":4.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.0","temperature_min":"14.4","precipitation_probability":"75","precipitation_mm":"6.6"},{"station_id":1482,"place_name":"Delft","latitude":52,"longitude":4.416667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.9","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"3.4"},{"station_id":1482,"place_name":"Delft","latitude":52,"longitude":4.416667,"datetime":"2014-08-09 00:00:00","temperature_max":"23.2","temperature_min":"16.6","precipitation_probability":"55","precipitation_mm":"5.4"},{"station_id":1482,"place_name":"Delft","latitude":52,"longitude":4.416667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"15.3"},{"station_id":1482,"place_name":"Delft","latitude":52,"longitude":4.416667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"15.3","precipitation_probability":"65","precipitation_mm":"6.5"},{"station_id":1482,"place_name":"Delft","latitude":52,"longitude":4.416667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.0","temperature_min":"14.4","precipitation_probability":"75","precipitation_mm":"6.6"},{"station_id":1483,"place_name":"Almelo","latitude":52.35,"longitude":6.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.9","temperature_min":"13.0","precipitation_probability":"85","precipitation_mm":"19.6"},{"station_id":1483,"place_name":"Almelo","latitude":52.35,"longitude":6.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.3","temperature_min":"16.6","precipitation_probability":"60","precipitation_mm":"14.0"},{"station_id":1483,"place_name":"Almelo","latitude":52.35,"longitude":6.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.0","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"12.6"},{"station_id":1483,"place_name":"Almelo","latitude":52.35,"longitude":6.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.3","precipitation_probability":"80","precipitation_mm":"7.4"},{"station_id":1483,"place_name":"Almelo","latitude":52.35,"longitude":6.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.5","temperature_min":"13.3","precipitation_probability":"75","precipitation_mm":"4.8"},{"station_id":1484,"place_name":"Hengelo","latitude":52.26667,"longitude":6.9,"datetime":"2014-08-08 00:00:00","temperature_max":"25.4","temperature_min":"11.8","precipitation_probability":"65","precipitation_mm":"6.6"},{"station_id":1484,"place_name":"Hengelo","latitude":52.26667,"longitude":6.9,"datetime":"2014-08-09 00:00:00","temperature_max":"25.0","temperature_min":"16.6","precipitation_probability":"50","precipitation_mm":"7.8"},{"station_id":1484,"place_name":"Hengelo","latitude":52.26667,"longitude":6.9,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"14.0","precipitation_probability":"70","precipitation_mm":"8.6"},{"station_id":1484,"place_name":"Hengelo","latitude":52.26667,"longitude":6.9,"datetime":"2014-08-11 00:00:00","temperature_max":"22.1","temperature_min":"14.3","precipitation_probability":"65","precipitation_mm":"6.2"},{"station_id":1484,"place_name":"Hengelo","latitude":52.26667,"longitude":6.9,"datetime":"2014-08-12 00:00:00","temperature_max":"21.4","temperature_min":"13.5","precipitation_probability":"65","precipitation_mm":"5.5"},{"station_id":1485,"place_name":"Haarlem","latitude":52.35,"longitude":4.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.0","temperature_min":"15.1","precipitation_probability":"90","precipitation_mm":"5.1"},{"station_id":1485,"place_name":"Haarlem","latitude":52.35,"longitude":4.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"22.4","temperature_min":"16.9","precipitation_probability":"70","precipitation_mm":"3.8"},{"station_id":1485,"place_name":"Haarlem","latitude":52.35,"longitude":4.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"14.8","precipitation_probability":"85","precipitation_mm":"10.8"},{"station_id":1485,"place_name":"Haarlem","latitude":52.35,"longitude":4.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"15.1","precipitation_probability":"70","precipitation_mm":"4.2"},{"station_id":1485,"place_name":"Haarlem","latitude":52.35,"longitude":4.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.8","temperature_min":"14.4","precipitation_probability":"75","precipitation_mm":"6.4"},{"station_id":1486,"place_name":"Texel","latitude":53.08333,"longitude":4.833333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.5","temperature_min":"16.0","precipitation_probability":"90","precipitation_mm":"5.1"},{"station_id":1486,"place_name":"Texel","latitude":53.08333,"longitude":4.833333,"datetime":"2014-08-09 00:00:00","temperature_max":"21.8","temperature_min":"17.7","precipitation_probability":"65","precipitation_mm":"7.7"},{"station_id":1486,"place_name":"Texel","latitude":53.08333,"longitude":4.833333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.3","temperature_min":"14.8","precipitation_probability":"85","precipitation_mm":"9.8"},{"station_id":1486,"place_name":"Texel","latitude":53.08333,"longitude":4.833333,"datetime":"2014-08-11 00:00:00","temperature_max":"20.7","temperature_min":"16.7","precipitation_probability":"60","precipitation_mm":"2.4"},{"station_id":1486,"place_name":"Texel","latitude":53.08333,"longitude":4.833333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.2","temperature_min":"15.2","precipitation_probability":"75","precipitation_mm":"5.3"},{"station_id":1487,"place_name":"Gulpen","latitude":50.83333,"longitude":5.833333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"16.2","precipitation_probability":"95","precipitation_mm":"5.9"},{"station_id":1487,"place_name":"Gulpen","latitude":50.83333,"longitude":5.833333,"datetime":"2014-08-09 00:00:00","temperature_max":"25.0","temperature_min":"16.7","precipitation_probability":"50","precipitation_mm":"9.3"},{"station_id":1487,"place_name":"Gulpen","latitude":50.83333,"longitude":5.833333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.9","temperature_min":"16.2","precipitation_probability":"90","precipitation_mm":"8.6"},{"station_id":1487,"place_name":"Gulpen","latitude":50.83333,"longitude":5.833333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.5","precipitation_probability":"70","precipitation_mm":"2.7"},{"station_id":1487,"place_name":"Gulpen","latitude":50.83333,"longitude":5.833333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"13.3","precipitation_probability":"75","precipitation_mm":"3.9"},{"station_id":1488,"place_name":"Den Bosch","latitude":51.68333,"longitude":5.3,"datetime":"2014-08-08 00:00:00","temperature_max":"23.6","temperature_min":"15.4","precipitation_probability":"90","precipitation_mm":"6.6"},{"station_id":1488,"place_name":"Den Bosch","latitude":51.68333,"longitude":5.3,"datetime":"2014-08-09 00:00:00","temperature_max":"24.3","temperature_min":"16.2","precipitation_probability":"70","precipitation_mm":"7.3"},{"station_id":1488,"place_name":"Den Bosch","latitude":51.68333,"longitude":5.3,"datetime":"2014-08-10 00:00:00","temperature_max":"26.4","temperature_min":"14.9","precipitation_probability":"85","precipitation_mm":"6.0"},{"station_id":1488,"place_name":"Den Bosch","latitude":51.68333,"longitude":5.3,"datetime":"2014-08-11 00:00:00","temperature_max":"21.5","temperature_min":"14.2","precipitation_probability":"75","precipitation_mm":"3.8"},{"station_id":1488,"place_name":"Den Bosch","latitude":51.68333,"longitude":5.3,"datetime":"2014-08-12 00:00:00","temperature_max":"20.9","temperature_min":"13.1","precipitation_probability":"75","precipitation_mm":"6.0"},{"station_id":1489,"place_name":"Zaanstad","latitude":52.43333,"longitude":4.816667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.3","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"4.7"},{"station_id":1489,"place_name":"Zaanstad","latitude":52.43333,"longitude":4.816667,"datetime":"2014-08-09 00:00:00","temperature_max":"22.9","temperature_min":"17.1","precipitation_probability":"70","precipitation_mm":"5.3"},{"station_id":1489,"place_name":"Zaanstad","latitude":52.43333,"longitude":4.816667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"12.1"},{"station_id":1489,"place_name":"Zaanstad","latitude":52.43333,"longitude":4.816667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"15.5","precipitation_probability":"65","precipitation_mm":"4.3"},{"station_id":1489,"place_name":"Zaanstad","latitude":52.43333,"longitude":4.816667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.9","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"6.8"},{"station_id":1490,"place_name":"Geleen","latitude":51,"longitude":5.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"16.2","precipitation_probability":"95","precipitation_mm":"5.9"},{"station_id":1490,"place_name":"Geleen","latitude":51,"longitude":5.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"25.0","temperature_min":"16.7","precipitation_probability":"50","precipitation_mm":"9.3"},{"station_id":1490,"place_name":"Geleen","latitude":51,"longitude":5.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.9","temperature_min":"16.2","precipitation_probability":"90","precipitation_mm":"8.6"},{"station_id":1490,"place_name":"Geleen","latitude":51,"longitude":5.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.5","precipitation_probability":"70","precipitation_mm":"2.7"},{"station_id":1490,"place_name":"Geleen","latitude":51,"longitude":5.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"13.3","precipitation_probability":"75","precipitation_mm":"3.9"},{"station_id":1491,"place_name":"Hoogeveen","latitude":52.73333,"longitude":6.516667,"datetime":"2014-08-08 00:00:00","temperature_max":"25.2","temperature_min":"10.3","precipitation_probability":"75","precipitation_mm":"14.2"},{"station_id":1491,"place_name":"Hoogeveen","latitude":52.73333,"longitude":6.516667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.2","temperature_min":"16.5","precipitation_probability":"80","precipitation_mm":"14.3"},{"station_id":1491,"place_name":"Hoogeveen","latitude":52.73333,"longitude":6.516667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.1","temperature_min":"13.5","precipitation_probability":"70","precipitation_mm":"6.9"},{"station_id":1491,"place_name":"Hoogeveen","latitude":52.73333,"longitude":6.516667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"14.3","precipitation_probability":"80","precipitation_mm":"6.3"},{"station_id":1491,"place_name":"Hoogeveen","latitude":52.73333,"longitude":6.516667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.9","temperature_min":"12.5","precipitation_probability":"75","precipitation_mm":"6.9"},{"station_id":1492,"place_name":"Otterlo","latitude":52.08333,"longitude":5.833333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"13.7","precipitation_probability":"95","precipitation_mm":"25.7"},{"station_id":1492,"place_name":"Otterlo","latitude":52.08333,"longitude":5.833333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.0","temperature_min":"16.1","precipitation_probability":"75","precipitation_mm":"9.1"},{"station_id":1492,"place_name":"Otterlo","latitude":52.08333,"longitude":5.833333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.3","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"8.2"},{"station_id":1492,"place_name":"Otterlo","latitude":52.08333,"longitude":5.833333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.7","precipitation_probability":"80","precipitation_mm":"5.0"},{"station_id":1492,"place_name":"Otterlo","latitude":52.08333,"longitude":5.833333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.4","temperature_min":"12.6","precipitation_probability":"70","precipitation_mm":"6.1"},{"station_id":1493,"place_name":"Goes","latitude":51.5,"longitude":3.833333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.4","temperature_min":"17.6","precipitation_probability":"95","precipitation_mm":"3.9"},{"station_id":1493,"place_name":"Goes","latitude":51.5,"longitude":3.833333,"datetime":"2014-08-09 00:00:00","temperature_max":"22.9","temperature_min":"16.4","precipitation_probability":"55","precipitation_mm":"2.0"},{"station_id":1493,"place_name":"Goes","latitude":51.5,"longitude":3.833333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.2","temperature_min":"14.4","precipitation_probability":"85","precipitation_mm":"7.5"},{"station_id":1493,"place_name":"Goes","latitude":51.5,"longitude":3.833333,"datetime":"2014-08-11 00:00:00","temperature_max":"22.4","temperature_min":"14.1","precipitation_probability":"85","precipitation_mm":"3.3"},{"station_id":1493,"place_name":"Goes","latitude":51.5,"longitude":3.833333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.3","temperature_min":"13.4","precipitation_probability":"75","precipitation_mm":"5.3"},{"station_id":1494,"place_name":"Scheveningen","latitude":52.11666,"longitude":4.283333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.2","temperature_min":"15.1","precipitation_probability":"95","precipitation_mm":"3.7"},{"station_id":1494,"place_name":"Scheveningen","latitude":52.11666,"longitude":4.283333,"datetime":"2014-08-09 00:00:00","temperature_max":"21.8","temperature_min":"16.8","precipitation_probability":"65","precipitation_mm":"4.5"},{"station_id":1494,"place_name":"Scheveningen","latitude":52.11666,"longitude":4.283333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.6","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"9.1"},{"station_id":1494,"place_name":"Scheveningen","latitude":52.11666,"longitude":4.283333,"datetime":"2014-08-11 00:00:00","temperature_max":"20.9","temperature_min":"14.5","precipitation_probability":"75","precipitation_mm":"4.8"},{"station_id":1494,"place_name":"Scheveningen","latitude":52.11666,"longitude":4.283333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"14.6","precipitation_probability":"70","precipitation_mm":"5.1"},{"station_id":1495,"place_name":"Emmen","latitude":52.75,"longitude":6.916667,"datetime":"2014-08-08 00:00:00","temperature_max":"26.0","temperature_min":"12.0","precipitation_probability":"90","precipitation_mm":"12.8"},{"station_id":1495,"place_name":"Emmen","latitude":52.75,"longitude":6.916667,"datetime":"2014-08-09 00:00:00","temperature_max":"25.0","temperature_min":"17.0","precipitation_probability":"80","precipitation_mm":"14.5"},{"station_id":1495,"place_name":"Emmen","latitude":52.75,"longitude":6.916667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.2","temperature_min":"13.6","precipitation_probability":"70","precipitation_mm":"7.4"},{"station_id":1495,"place_name":"Emmen","latitude":52.75,"longitude":6.916667,"datetime":"2014-08-11 00:00:00","temperature_max":"22.9","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"5.4"},{"station_id":1495,"place_name":"Emmen","latitude":52.75,"longitude":6.916667,"datetime":"2014-08-12 00:00:00","temperature_max":"22.6","temperature_min":"12.5","precipitation_probability":"85","precipitation_mm":"3.9"},{"station_id":1496,"place_name":"Ede","latitude":52.03333,"longitude":5.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"13.7","precipitation_probability":"95","precipitation_mm":"25.7"},{"station_id":1496,"place_name":"Ede","latitude":52.03333,"longitude":5.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.0","temperature_min":"16.1","precipitation_probability":"75","precipitation_mm":"9.1"},{"station_id":1496,"place_name":"Ede","latitude":52.03333,"longitude":5.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.3","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"8.2"},{"station_id":1496,"place_name":"Ede","latitude":52.03333,"longitude":5.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.7","precipitation_probability":"80","precipitation_mm":"5.0"},{"station_id":1496,"place_name":"Ede","latitude":52.03333,"longitude":5.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.4","temperature_min":"12.6","precipitation_probability":"70","precipitation_mm":"6.1"},{"station_id":1497,"place_name":"Ameland","latitude":53.41667,"longitude":5.833333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.0","temperature_min":"10.2","precipitation_probability":"85","precipitation_mm":"7.9"},{"station_id":1497,"place_name":"Ameland","latitude":53.41667,"longitude":5.833333,"datetime":"2014-08-09 00:00:00","temperature_max":"22.4","temperature_min":"17.6","precipitation_probability":"80","precipitation_mm":"12.8"},{"station_id":1497,"place_name":"Ameland","latitude":53.41667,"longitude":5.833333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.1","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"6.7"},{"station_id":1497,"place_name":"Ameland","latitude":53.41667,"longitude":5.833333,"datetime":"2014-08-11 00:00:00","temperature_max":"20.8","temperature_min":"16.1","precipitation_probability":"60","precipitation_mm":"4.1"},{"station_id":1497,"place_name":"Ameland","latitude":53.41667,"longitude":5.833333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.5","temperature_min":"15.0","precipitation_probability":"75","precipitation_mm":"8.1"},{"station_id":1498,"place_name":"Nijmegen","latitude":51.83333,"longitude":5.866667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"13.7","precipitation_probability":"95","precipitation_mm":"25.7"},{"station_id":1498,"place_name":"Nijmegen","latitude":51.83333,"longitude":5.866667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.0","temperature_min":"16.1","precipitation_probability":"75","precipitation_mm":"9.1"},{"station_id":1498,"place_name":"Nijmegen","latitude":51.83333,"longitude":5.866667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.3","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"8.2"},{"station_id":1498,"place_name":"Nijmegen","latitude":51.83333,"longitude":5.866667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.7","precipitation_probability":"80","precipitation_mm":"5.0"},{"station_id":1498,"place_name":"Nijmegen","latitude":51.83333,"longitude":5.866667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.4","temperature_min":"12.6","precipitation_probability":"70","precipitation_mm":"6.1"},{"station_id":1499,"place_name":"Marknesse","latitude":52.91667,"longitude":5.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.5","temperature_min":"11.7","precipitation_probability":"85","precipitation_mm":"20.8"},{"station_id":1499,"place_name":"Marknesse","latitude":52.91667,"longitude":5.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"23.7","temperature_min":"16.9","precipitation_probability":"90","precipitation_mm":"11.0"},{"station_id":1499,"place_name":"Marknesse","latitude":52.91667,"longitude":5.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.7","temperature_min":"13.9","precipitation_probability":"70","precipitation_mm":"9.2"},{"station_id":1499,"place_name":"Marknesse","latitude":52.91667,"longitude":5.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.5","temperature_min":"15.2","precipitation_probability":"85","precipitation_mm":"7.6"},{"station_id":1499,"place_name":"Marknesse","latitude":52.91667,"longitude":5.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.2","temperature_min":"13.9","precipitation_probability":"80","precipitation_mm":"15.7"},{"station_id":1500,"place_name":"Dwingeloo","latitude":52.83333,"longitude":6.333333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.5","temperature_min":"11.3","precipitation_probability":"85","precipitation_mm":"16.6"},{"station_id":1500,"place_name":"Dwingeloo","latitude":52.83333,"longitude":6.333333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.0","temperature_min":"16.6","precipitation_probability":"85","precipitation_mm":"11.9"},{"station_id":1500,"place_name":"Dwingeloo","latitude":52.83333,"longitude":6.333333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.4","temperature_min":"13.4","precipitation_probability":"70","precipitation_mm":"6.7"},{"station_id":1500,"place_name":"Dwingeloo","latitude":52.83333,"longitude":6.333333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.7","precipitation_probability":"80","precipitation_mm":"7.2"},{"station_id":1500,"place_name":"Dwingeloo","latitude":52.83333,"longitude":6.333333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"13.2","precipitation_probability":"80","precipitation_mm":"10.6"},{"station_id":1501,"place_name":"Barneveld","latitude":52.25,"longitude":5.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.8","temperature_min":"13.5","precipitation_probability":"95","precipitation_mm":"22.1"},{"station_id":1501,"place_name":"Barneveld","latitude":52.25,"longitude":5.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.1","temperature_min":"16.4","precipitation_probability":"75","precipitation_mm":"10.8"},{"station_id":1501,"place_name":"Barneveld","latitude":52.25,"longitude":5.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"14.5","precipitation_probability":"85","precipitation_mm":"8.1"},{"station_id":1501,"place_name":"Barneveld","latitude":52.25,"longitude":5.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.4","temperature_min":"14.3","precipitation_probability":"75","precipitation_mm":"4.5"},{"station_id":1501,"place_name":"Barneveld","latitude":52.25,"longitude":5.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.5","temperature_min":"13.1","precipitation_probability":"70","precipitation_mm":"5.7"},{"station_id":1502,"place_name":"Biddinghuizen","latitude":52.41667,"longitude":5.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.4","temperature_min":"12.7","precipitation_probability":"90","precipitation_mm":"6.2"},{"station_id":1502,"place_name":"Biddinghuizen","latitude":52.41667,"longitude":5.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"23.9","temperature_min":"16.3","precipitation_probability":"60","precipitation_mm":"10.7"},{"station_id":1502,"place_name":"Biddinghuizen","latitude":52.41667,"longitude":5.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.4","temperature_min":"14.2","precipitation_probability":"90","precipitation_mm":"10.9"},{"station_id":1502,"place_name":"Biddinghuizen","latitude":52.41667,"longitude":5.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.9","temperature_min":"14.7","precipitation_probability":"75","precipitation_mm":"3.6"},{"station_id":1502,"place_name":"Biddinghuizen","latitude":52.41667,"longitude":5.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.0","temperature_min":"13.3","precipitation_probability":"80","precipitation_mm":"9.0"},{"station_id":1503,"place_name":"Deurne","latitude":51.5,"longitude":5.833333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.7","temperature_min":"13.5","precipitation_probability":"90","precipitation_mm":"12.9"},{"station_id":1503,"place_name":"Deurne","latitude":51.5,"longitude":5.833333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.9","temperature_min":"16.4","precipitation_probability":"60","precipitation_mm":"10.0"},{"station_id":1503,"place_name":"Deurne","latitude":51.5,"longitude":5.833333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.4","temperature_min":"14.4","precipitation_probability":"85","precipitation_mm":"1.2"},{"station_id":1503,"place_name":"Deurne","latitude":51.5,"longitude":5.833333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.8","temperature_min":"13.9","precipitation_probability":"65","precipitation_mm":"1.1"},{"station_id":1503,"place_name":"Deurne","latitude":51.5,"longitude":5.833333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.9","temperature_min":"13.3","precipitation_probability":"80","precipitation_mm":"4.8"},{"station_id":1504,"place_name":"Veluwemeer","latitude":52.41667,"longitude":5.75,"datetime":"2014-08-08 00:00:00","temperature_max":"24.4","temperature_min":"12.9","precipitation_probability":"90","precipitation_mm":"9.0"},{"station_id":1504,"place_name":"Veluwemeer","latitude":52.41667,"longitude":5.75,"datetime":"2014-08-09 00:00:00","temperature_max":"23.7","temperature_min":"16.8","precipitation_probability":"70","precipitation_mm":"11.0"},{"station_id":1504,"place_name":"Veluwemeer","latitude":52.41667,"longitude":5.75,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"14.1","precipitation_probability":"85","precipitation_mm":"11.0"},{"station_id":1504,"place_name":"Veluwemeer","latitude":52.41667,"longitude":5.75,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.9","precipitation_probability":"80","precipitation_mm":"4.7"},{"station_id":1504,"place_name":"Veluwemeer","latitude":52.41667,"longitude":5.75,"datetime":"2014-08-12 00:00:00","temperature_max":"20.9","temperature_min":"13.7","precipitation_probability":"80","precipitation_mm":"9.7"},{"station_id":1505,"place_name":"Alphen a/d Rijn","latitude":52.08333,"longitude":4.5,"datetime":"2014-08-08 00:00:00","temperature_max":"23.2","temperature_min":"15.1","precipitation_probability":"95","precipitation_mm":"3.7"},{"station_id":1505,"place_name":"Alphen a/d Rijn","latitude":52.08333,"longitude":4.5,"datetime":"2014-08-09 00:00:00","temperature_max":"21.8","temperature_min":"16.8","precipitation_probability":"65","precipitation_mm":"4.5"},{"station_id":1505,"place_name":"Alphen a/d Rijn","latitude":52.08333,"longitude":4.5,"datetime":"2014-08-10 00:00:00","temperature_max":"25.6","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"9.1"},{"station_id":1505,"place_name":"Alphen a/d Rijn","latitude":52.08333,"longitude":4.5,"datetime":"2014-08-11 00:00:00","temperature_max":"20.9","temperature_min":"14.5","precipitation_probability":"75","precipitation_mm":"4.8"},{"station_id":1505,"place_name":"Alphen a/d Rijn","latitude":52.08333,"longitude":4.5,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"14.6","precipitation_probability":"70","precipitation_mm":"5.1"},{"station_id":1506,"place_name":"Zandvoort","latitude":52.33333,"longitude":4.416667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.0","temperature_min":"15.1","precipitation_probability":"90","precipitation_mm":"5.1"},{"station_id":1506,"place_name":"Zandvoort","latitude":52.33333,"longitude":4.416667,"datetime":"2014-08-09 00:00:00","temperature_max":"22.4","temperature_min":"16.9","precipitation_probability":"70","precipitation_mm":"3.8"},{"station_id":1506,"place_name":"Zandvoort","latitude":52.33333,"longitude":4.416667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"14.8","precipitation_probability":"85","precipitation_mm":"10.8"},{"station_id":1506,"place_name":"Zandvoort","latitude":52.33333,"longitude":4.416667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"15.1","precipitation_probability":"70","precipitation_mm":"4.2"},{"station_id":1506,"place_name":"Zandvoort","latitude":52.33333,"longitude":4.416667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.8","temperature_min":"14.4","precipitation_probability":"75","precipitation_mm":"6.4"},{"station_id":1507,"place_name":"Egmond","latitude":52.75,"longitude":4.5,"datetime":"2014-08-08 00:00:00","temperature_max":"24.3","temperature_min":"15.6","precipitation_probability":"90","precipitation_mm":"5.3"},{"station_id":1507,"place_name":"Egmond","latitude":52.75,"longitude":4.5,"datetime":"2014-08-09 00:00:00","temperature_max":"22.8","temperature_min":"17.5","precipitation_probability":"75","precipitation_mm":"4.0"},{"station_id":1507,"place_name":"Egmond","latitude":52.75,"longitude":4.5,"datetime":"2014-08-10 00:00:00","temperature_max":"25.7","temperature_min":"14.8","precipitation_probability":"85","precipitation_mm":"10.9"},{"station_id":1507,"place_name":"Egmond","latitude":52.75,"longitude":4.5,"datetime":"2014-08-11 00:00:00","temperature_max":"22.0","temperature_min":"15.6","precipitation_probability":"70","precipitation_mm":"3.8"},{"station_id":1507,"place_name":"Egmond","latitude":52.75,"longitude":4.5,"datetime":"2014-08-12 00:00:00","temperature_max":"21.0","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"7.3"},{"station_id":1508,"place_name":"Zwolle","latitude":52.5,"longitude":6.083333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.4","temperature_min":"13.1","precipitation_probability":"95","precipitation_mm":"24.3"},{"station_id":1508,"place_name":"Zwolle","latitude":52.5,"longitude":6.083333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.1","temperature_min":"16.8","precipitation_probability":"65","precipitation_mm":"14.6"},{"station_id":1508,"place_name":"Zwolle","latitude":52.5,"longitude":6.083333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"14.3","precipitation_probability":"85","precipitation_mm":"13.0"},{"station_id":1508,"place_name":"Zwolle","latitude":52.5,"longitude":6.083333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.7","temperature_min":"14.6","precipitation_probability":"80","precipitation_mm":"6.5"},{"station_id":1508,"place_name":"Zwolle","latitude":52.5,"longitude":6.083333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"13.5","precipitation_probability":"75","precipitation_mm":"5.8"},{"station_id":1509,"place_name":"Almere","latitude":52.33333,"longitude":5.25,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"14.4","precipitation_probability":"85","precipitation_mm":"7.1"},{"station_id":1509,"place_name":"Almere","latitude":52.33333,"longitude":5.25,"datetime":"2014-08-09 00:00:00","temperature_max":"23.6","temperature_min":"16.6","precipitation_probability":"55","precipitation_mm":"6.7"},{"station_id":1509,"place_name":"Almere","latitude":52.33333,"longitude":5.25,"datetime":"2014-08-10 00:00:00","temperature_max":"25.8","temperature_min":"14.1","precipitation_probability":"80","precipitation_mm":"9.4"},{"station_id":1509,"place_name":"Almere","latitude":52.33333,"longitude":5.25,"datetime":"2014-08-11 00:00:00","temperature_max":"21.5","temperature_min":"14.9","precipitation_probability":"60","precipitation_mm":"4.0"},{"station_id":1509,"place_name":"Almere","latitude":52.33333,"longitude":5.25,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"13.6","precipitation_probability":"65","precipitation_mm":"4.1"},{"station_id":1510,"place_name":"Alkmaar","latitude":52.58333,"longitude":4.75,"datetime":"2014-08-08 00:00:00","temperature_max":"24.3","temperature_min":"15.6","precipitation_probability":"90","precipitation_mm":"5.3"},{"station_id":1510,"place_name":"Alkmaar","latitude":52.58333,"longitude":4.75,"datetime":"2014-08-09 00:00:00","temperature_max":"22.8","temperature_min":"17.5","precipitation_probability":"75","precipitation_mm":"4.0"},{"station_id":1510,"place_name":"Alkmaar","latitude":52.58333,"longitude":4.75,"datetime":"2014-08-10 00:00:00","temperature_max":"25.7","temperature_min":"14.8","precipitation_probability":"85","precipitation_mm":"10.9"},{"station_id":1510,"place_name":"Alkmaar","latitude":52.58333,"longitude":4.75,"datetime":"2014-08-11 00:00:00","temperature_max":"22.0","temperature_min":"15.6","precipitation_probability":"70","precipitation_mm":"3.8"},{"station_id":1510,"place_name":"Alkmaar","latitude":52.58333,"longitude":4.75,"datetime":"2014-08-12 00:00:00","temperature_max":"21.0","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"7.3"},{"station_id":1511,"place_name":"Grevelinger Meer","latitude":51.75,"longitude":4,"datetime":"2014-08-08 00:00:00","temperature_max":"23.3","temperature_min":"16.5","precipitation_probability":"95","precipitation_mm":"2.3"},{"station_id":1511,"place_name":"Grevelinger Meer","latitude":51.75,"longitude":4,"datetime":"2014-08-09 00:00:00","temperature_max":"22.5","temperature_min":"16.9","precipitation_probability":"55","precipitation_mm":"2.1"},{"station_id":1511,"place_name":"Grevelinger Meer","latitude":51.75,"longitude":4,"datetime":"2014-08-10 00:00:00","temperature_max":"27.3","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"8.4"},{"station_id":1511,"place_name":"Grevelinger Meer","latitude":51.75,"longitude":4,"datetime":"2014-08-11 00:00:00","temperature_max":"21.2","temperature_min":"15.1","precipitation_probability":"75","precipitation_mm":"3.5"},{"station_id":1511,"place_name":"Grevelinger Meer","latitude":51.75,"longitude":4,"datetime":"2014-08-12 00:00:00","temperature_max":"21.4","temperature_min":"14.3","precipitation_probability":"75","precipitation_mm":"4.9"},{"station_id":1512,"place_name":"Veerse Meer","latitude":51.58333,"longitude":3.616667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.5","temperature_min":"18.0","precipitation_probability":"90","precipitation_mm":"3.9"},{"station_id":1512,"place_name":"Veerse Meer","latitude":51.58333,"longitude":3.616667,"datetime":"2014-08-09 00:00:00","temperature_max":"22.6","temperature_min":"16.4","precipitation_probability":"55","precipitation_mm":"1.5"},{"station_id":1512,"place_name":"Veerse Meer","latitude":51.58333,"longitude":3.616667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"14.4","precipitation_probability":"85","precipitation_mm":"6.7"},{"station_id":1512,"place_name":"Veerse Meer","latitude":51.58333,"longitude":3.616667,"datetime":"2014-08-11 00:00:00","temperature_max":"22.3","temperature_min":"14.2","precipitation_probability":"85","precipitation_mm":"2.9"},{"station_id":1512,"place_name":"Veerse Meer","latitude":51.58333,"longitude":3.616667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.4","temperature_min":"13.6","precipitation_probability":"75","precipitation_mm":"5.0"},{"station_id":1513,"place_name":"Renesse","latitude":51.66667,"longitude":3.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"22.9","temperature_min":"18.1","precipitation_probability":"90","precipitation_mm":"3.5"},{"station_id":1513,"place_name":"Renesse","latitude":51.66667,"longitude":3.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"22.3","temperature_min":"17.1","precipitation_probability":"45","precipitation_mm":"1.9"},{"station_id":1513,"place_name":"Renesse","latitude":51.66667,"longitude":3.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"17.2","precipitation_probability":"85","precipitation_mm":"9.8"},{"station_id":1513,"place_name":"Renesse","latitude":51.66667,"longitude":3.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"20.2","temperature_min":"15.6","precipitation_probability":"70","precipitation_mm":"2.4"},{"station_id":1513,"place_name":"Renesse","latitude":51.66667,"longitude":3.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.2","temperature_min":"15.2","precipitation_probability":"70","precipitation_mm":"4.5"},{"station_id":12016,"place_name":"IJmond","latitude":52.47,"longitude":4.52,"datetime":"2014-08-08 00:00:00","temperature_max":"25.0","temperature_min":"14.7","precipitation_probability":"95","precipitation_mm":"3.6"},{"station_id":12016,"place_name":"IJmond","latitude":52.47,"longitude":4.52,"datetime":"2014-08-09 00:00:00","temperature_max":"22.1","temperature_min":"16.8","precipitation_probability":"60","precipitation_mm":"3.0"},{"station_id":12016,"place_name":"IJmond","latitude":52.47,"longitude":4.52,"datetime":"2014-08-10 00:00:00","temperature_max":"28.4","temperature_min":"14.8","precipitation_probability":"80","precipitation_mm":"6.3"},{"station_id":12016,"place_name":"IJmond","latitude":52.47,"longitude":4.52,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"16.1","precipitation_probability":"70","precipitation_mm":"3.8"},{"station_id":12016,"place_name":"IJmond","latitude":52.47,"longitude":4.52,"datetime":"2014-08-12 00:00:00","temperature_max":"20.7","temperature_min":"15.7","precipitation_probability":"70","precipitation_mm":"4.2"},{"station_id":12017,"place_name":"Huibertgat","latitude":53.57,"longitude":6.4,"datetime":"2014-08-08 00:00:00","temperature_max":"24.2","temperature_min":"10.7","precipitation_probability":"85","precipitation_mm":"4.9"},{"station_id":12017,"place_name":"Huibertgat","latitude":53.57,"longitude":6.4,"datetime":"2014-08-09 00:00:00","temperature_max":"22.5","temperature_min":"17.5","precipitation_probability":"85","precipitation_mm":"14.3"},{"station_id":12017,"place_name":"Huibertgat","latitude":53.57,"longitude":6.4,"datetime":"2014-08-10 00:00:00","temperature_max":"25.1","temperature_min":"15.4","precipitation_probability":"85","precipitation_mm":"6.7"},{"station_id":12017,"place_name":"Huibertgat","latitude":53.57,"longitude":6.4,"datetime":"2014-08-11 00:00:00","temperature_max":"20.9","temperature_min":"16.4","precipitation_probability":"55","precipitation_mm":"4.5"},{"station_id":12017,"place_name":"Huibertgat","latitude":53.57,"longitude":6.4,"datetime":"2014-08-12 00:00:00","temperature_max":"20.4","temperature_min":"15.0","precipitation_probability":"70","precipitation_mm":"8.5"},{"station_id":12018,"place_name":"Cadzand","latitude":51.38,"longitude":3.38,"datetime":"2014-08-08 00:00:00","temperature_max":"23.7","temperature_min":"17.2","precipitation_probability":"95","precipitation_mm":"6.1"},{"station_id":12018,"place_name":"Cadzand","latitude":51.38,"longitude":3.38,"datetime":"2014-08-09 00:00:00","temperature_max":"23.0","temperature_min":"16.5","precipitation_probability":"45","precipitation_mm":"1.7"},{"station_id":12018,"place_name":"Cadzand","latitude":51.38,"longitude":3.38,"datetime":"2014-08-10 00:00:00","temperature_max":"25.4","temperature_min":"16.1","precipitation_probability":"90","precipitation_mm":"8.9"},{"station_id":12018,"place_name":"Cadzand","latitude":51.38,"longitude":3.38,"datetime":"2014-08-11 00:00:00","temperature_max":"21.5","temperature_min":"14.8","precipitation_probability":"70","precipitation_mm":"1.9"},{"station_id":12018,"place_name":"Cadzand","latitude":51.38,"longitude":3.38,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"14.3","precipitation_probability":"70","precipitation_mm":"3.8"},{"station_id":12019,"place_name":"Hoofdplaat","latitude":51.38,"longitude":3.67,"datetime":"2014-08-08 00:00:00","temperature_max":"23.1","temperature_min":"17.9","precipitation_probability":"90","precipitation_mm":"6.1"},{"station_id":12019,"place_name":"Hoofdplaat","latitude":51.38,"longitude":3.67,"datetime":"2014-08-09 00:00:00","temperature_max":"22.2","temperature_min":"16.7","precipitation_probability":"50","precipitation_mm":"2.3"},{"station_id":12019,"place_name":"Hoofdplaat","latitude":51.38,"longitude":3.67,"datetime":"2014-08-10 00:00:00","temperature_max":"24.6","temperature_min":"17.4","precipitation_probability":"90","precipitation_mm":"9.3"},{"station_id":12019,"place_name":"Hoofdplaat","latitude":51.38,"longitude":3.67,"datetime":"2014-08-11 00:00:00","temperature_max":"20.2","temperature_min":"15.4","precipitation_probability":"80","precipitation_mm":"2.0"},{"station_id":12019,"place_name":"Hoofdplaat","latitude":51.38,"longitude":3.67,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"15.3","precipitation_probability":"70","precipitation_mm":"4.2"},{"station_id":12020,"place_name":"Oosterschelde","latitude":51.68,"longitude":3.6,"datetime":"2014-08-08 00:00:00","temperature_max":"22.9","temperature_min":"18.1","precipitation_probability":"90","precipitation_mm":"3.5"},{"station_id":12020,"place_name":"Oosterschelde","latitude":51.68,"longitude":3.6,"datetime":"2014-08-09 00:00:00","temperature_max":"22.3","temperature_min":"17.1","precipitation_probability":"45","precipitation_mm":"1.9"},{"station_id":12020,"place_name":"Oosterschelde","latitude":51.68,"longitude":3.6,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"17.2","precipitation_probability":"85","precipitation_mm":"9.8"},{"station_id":12020,"place_name":"Oosterschelde","latitude":51.68,"longitude":3.6,"datetime":"2014-08-11 00:00:00","temperature_max":"20.2","temperature_min":"15.6","precipitation_probability":"70","precipitation_mm":"2.4"},{"station_id":12020,"place_name":"Oosterschelde","latitude":51.68,"longitude":3.6,"datetime":"2014-08-12 00:00:00","temperature_max":"21.2","temperature_min":"15.2","precipitation_probability":"70","precipitation_mm":"4.5"},{"station_id":12021,"place_name":"Vlakte van de Raan","latitude":51.5,"longitude":3.25,"datetime":"2014-08-08 00:00:00","temperature_max":"23.7","temperature_min":"17.2","precipitation_probability":"95","precipitation_mm":"6.1"},{"station_id":12021,"place_name":"Vlakte van de Raan","latitude":51.5,"longitude":3.25,"datetime":"2014-08-09 00:00:00","temperature_max":"23.0","temperature_min":"16.5","precipitation_probability":"45","precipitation_mm":"1.7"},{"station_id":12021,"place_name":"Vlakte van de Raan","latitude":51.5,"longitude":3.25,"datetime":"2014-08-10 00:00:00","temperature_max":"25.4","temperature_min":"16.1","precipitation_probability":"90","precipitation_mm":"8.9"},{"station_id":12021,"place_name":"Vlakte van de Raan","latitude":51.5,"longitude":3.25,"datetime":"2014-08-11 00:00:00","temperature_max":"21.5","temperature_min":"14.8","precipitation_probability":"70","precipitation_mm":"1.9"},{"station_id":12021,"place_name":"Vlakte van de Raan","latitude":51.5,"longitude":3.25,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"14.3","precipitation_probability":"70","precipitation_mm":"3.8"},{"station_id":12022,"place_name":"Hansweert","latitude":51.45,"longitude":4,"datetime":"2014-08-08 00:00:00","temperature_max":"23.4","temperature_min":"17.6","precipitation_probability":"95","precipitation_mm":"3.9"},{"station_id":12022,"place_name":"Hansweert","latitude":51.45,"longitude":4,"datetime":"2014-08-09 00:00:00","temperature_max":"22.9","temperature_min":"16.4","precipitation_probability":"55","precipitation_mm":"2.0"},{"station_id":12022,"place_name":"Hansweert","latitude":51.45,"longitude":4,"datetime":"2014-08-10 00:00:00","temperature_max":"26.2","temperature_min":"14.4","precipitation_probability":"85","precipitation_mm":"7.5"},{"station_id":12022,"place_name":"Hansweert","latitude":51.45,"longitude":4,"datetime":"2014-08-11 00:00:00","temperature_max":"22.4","temperature_min":"14.1","precipitation_probability":"85","precipitation_mm":"3.3"},{"station_id":12022,"place_name":"Hansweert","latitude":51.45,"longitude":4,"datetime":"2014-08-12 00:00:00","temperature_max":"21.3","temperature_min":"13.4","precipitation_probability":"75","precipitation_mm":"5.3"},{"station_id":12023,"place_name":"Schaar","latitude":51.65,"longitude":3.68,"datetime":"2014-08-08 00:00:00","temperature_max":"22.9","temperature_min":"18.1","precipitation_probability":"90","precipitation_mm":"3.5"},{"station_id":12023,"place_name":"Schaar","latitude":51.65,"longitude":3.68,"datetime":"2014-08-09 00:00:00","temperature_max":"22.3","temperature_min":"17.1","precipitation_probability":"45","precipitation_mm":"1.9"},{"station_id":12023,"place_name":"Schaar","latitude":51.65,"longitude":3.68,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"17.2","precipitation_probability":"85","precipitation_mm":"9.8"},{"station_id":12023,"place_name":"Schaar","latitude":51.65,"longitude":3.68,"datetime":"2014-08-11 00:00:00","temperature_max":"20.2","temperature_min":"15.6","precipitation_probability":"70","precipitation_mm":"2.4"},{"station_id":12023,"place_name":"Schaar","latitude":51.65,"longitude":3.68,"datetime":"2014-08-12 00:00:00","temperature_max":"21.2","temperature_min":"15.2","precipitation_probability":"70","precipitation_mm":"4.5"},{"station_id":12024,"place_name":"Stavenisse","latitude":51.6,"longitude":4,"datetime":"2014-08-08 00:00:00","temperature_max":"23.2","temperature_min":"17.2","precipitation_probability":"95","precipitation_mm":"3.3"},{"station_id":12024,"place_name":"Stavenisse","latitude":51.6,"longitude":4,"datetime":"2014-08-09 00:00:00","temperature_max":"22.4","temperature_min":"16.9","precipitation_probability":"60","precipitation_mm":"2.2"},{"station_id":12024,"place_name":"Stavenisse","latitude":51.6,"longitude":4,"datetime":"2014-08-10 00:00:00","temperature_max":"26.2","temperature_min":"16.0","precipitation_probability":"85","precipitation_mm":"8.9"},{"station_id":12024,"place_name":"Stavenisse","latitude":51.6,"longitude":4,"datetime":"2014-08-11 00:00:00","temperature_max":"21.0","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"2.3"},{"station_id":12024,"place_name":"Stavenisse","latitude":51.6,"longitude":4,"datetime":"2014-08-12 00:00:00","temperature_max":"21.3","temperature_min":"14.4","precipitation_probability":"75","precipitation_mm":"4.9"},{"station_id":12025,"place_name":"Tholen","latitude":51.52,"longitude":4.13,"datetime":"2014-08-08 00:00:00","temperature_max":"23.4","temperature_min":"17.6","precipitation_probability":"95","precipitation_mm":"3.9"},{"station_id":12025,"place_name":"Tholen","latitude":51.52,"longitude":4.13,"datetime":"2014-08-09 00:00:00","temperature_max":"22.9","temperature_min":"16.4","precipitation_probability":"55","precipitation_mm":"2.0"},{"station_id":12025,"place_name":"Tholen","latitude":51.52,"longitude":4.13,"datetime":"2014-08-10 00:00:00","temperature_max":"26.2","temperature_min":"14.4","precipitation_probability":"85","precipitation_mm":"7.5"},{"station_id":12025,"place_name":"Tholen","latitude":51.52,"longitude":4.13,"datetime":"2014-08-11 00:00:00","temperature_max":"22.4","temperature_min":"14.1","precipitation_probability":"85","precipitation_mm":"3.3"},{"station_id":12025,"place_name":"Tholen","latitude":51.52,"longitude":4.13,"datetime":"2014-08-12 00:00:00","temperature_max":"21.3","temperature_min":"13.4","precipitation_probability":"75","precipitation_mm":"5.3"},{"station_id":12026,"place_name":"Rotterdam Geulhaven","latitude":51.88,"longitude":4.32,"datetime":"2014-08-08 00:00:00","temperature_max":"24.9","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"3.4"},{"station_id":12026,"place_name":"Rotterdam Geulhaven","latitude":51.88,"longitude":4.32,"datetime":"2014-08-09 00:00:00","temperature_max":"23.2","temperature_min":"16.6","precipitation_probability":"55","precipitation_mm":"5.4"},{"station_id":12026,"place_name":"Rotterdam Geulhaven","latitude":51.88,"longitude":4.32,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"15.3"},{"station_id":12026,"place_name":"Rotterdam Geulhaven","latitude":51.88,"longitude":4.32,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"15.3","precipitation_probability":"65","precipitation_mm":"6.5"},{"station_id":12026,"place_name":"Rotterdam Geulhaven","latitude":51.88,"longitude":4.32,"datetime":"2014-08-12 00:00:00","temperature_max":"21.0","temperature_min":"14.4","precipitation_probability":"75","precipitation_mm":"6.6"},{"station_id":12027,"place_name":"IJmuiden","latitude":52.47,"longitude":4.57,"datetime":"2014-08-08 00:00:00","temperature_max":"25.0","temperature_min":"14.7","precipitation_probability":"95","precipitation_mm":"3.6"},{"station_id":12027,"place_name":"IJmuiden","latitude":52.47,"longitude":4.57,"datetime":"2014-08-09 00:00:00","temperature_max":"22.1","temperature_min":"16.8","precipitation_probability":"60","precipitation_mm":"3.0"},{"station_id":12027,"place_name":"IJmuiden","latitude":52.47,"longitude":4.57,"datetime":"2014-08-10 00:00:00","temperature_max":"28.4","temperature_min":"14.8","precipitation_probability":"80","precipitation_mm":"6.3"},{"station_id":12027,"place_name":"IJmuiden","latitude":52.47,"longitude":4.57,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"16.1","precipitation_probability":"70","precipitation_mm":"3.8"},{"station_id":12027,"place_name":"IJmuiden","latitude":52.47,"longitude":4.57,"datetime":"2014-08-12 00:00:00","temperature_max":"20.7","temperature_min":"15.7","precipitation_probability":"70","precipitation_mm":"4.2"},{"station_id":12028,"place_name":"Wijdenes","latitude":52.63,"longitude":5.17,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"14.4","precipitation_probability":"90","precipitation_mm":"6.9"},{"station_id":12028,"place_name":"Wijdenes","latitude":52.63,"longitude":5.17,"datetime":"2014-08-09 00:00:00","temperature_max":"22.7","temperature_min":"17.3","precipitation_probability":"65","precipitation_mm":"8.4"},{"station_id":12028,"place_name":"Wijdenes","latitude":52.63,"longitude":5.17,"datetime":"2014-08-10 00:00:00","temperature_max":"25.0","temperature_min":"13.9","precipitation_probability":"80","precipitation_mm":"5.8"},{"station_id":12028,"place_name":"Wijdenes","latitude":52.63,"longitude":5.17,"datetime":"2014-08-11 00:00:00","temperature_max":"20.8","temperature_min":"15.5","precipitation_probability":"60","precipitation_mm":"3.6"},{"station_id":12028,"place_name":"Wijdenes","latitude":52.63,"longitude":5.17,"datetime":"2014-08-12 00:00:00","temperature_max":"20.7","temperature_min":"14.7","precipitation_probability":"70","precipitation_mm":"4.8"},{"station_id":12029,"place_name":"Zierikzee","latitude":51.63334,"longitude":3.916667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.2","temperature_min":"17.2","precipitation_probability":"95","precipitation_mm":"3.3"},{"station_id":12029,"place_name":"Zierikzee","latitude":51.63334,"longitude":3.916667,"datetime":"2014-08-09 00:00:00","temperature_max":"22.4","temperature_min":"16.9","precipitation_probability":"60","precipitation_mm":"2.2"},{"station_id":12029,"place_name":"Zierikzee","latitude":51.63334,"longitude":3.916667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.2","temperature_min":"16.0","precipitation_probability":"85","precipitation_mm":"8.9"},{"station_id":12029,"place_name":"Zierikzee","latitude":51.63334,"longitude":3.916667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.0","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"2.3"},{"station_id":12029,"place_name":"Zierikzee","latitude":51.63334,"longitude":3.916667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.3","temperature_min":"14.4","precipitation_probability":"75","precipitation_mm":"4.9"},{"station_id":12179,"place_name":"Heerenveen","latitude":52.95,"longitude":5.916667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.4","temperature_min":"11.1","precipitation_probability":"80","precipitation_mm":"14.9"},{"station_id":12179,"place_name":"Heerenveen","latitude":52.95,"longitude":5.916667,"datetime":"2014-08-09 00:00:00","temperature_max":"23.6","temperature_min":"17.0","precipitation_probability":"90","precipitation_mm":"8.6"},{"station_id":12179,"place_name":"Heerenveen","latitude":52.95,"longitude":5.916667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.8","temperature_min":"13.6","precipitation_probability":"70","precipitation_mm":"8.7"},{"station_id":12179,"place_name":"Heerenveen","latitude":52.95,"longitude":5.916667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.5","temperature_min":"15.4","precipitation_probability":"80","precipitation_mm":"8.5"},{"station_id":12179,"place_name":"Heerenveen","latitude":52.95,"longitude":5.916667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"14.1","precipitation_probability":"80","precipitation_mm":"14.3"},{"station_id":12180,"place_name":"Dronten","latitude":52.53333,"longitude":5.7,"datetime":"2014-08-08 00:00:00","temperature_max":"24.4","temperature_min":"12.9","precipitation_probability":"90","precipitation_mm":"9.0"},{"station_id":12180,"place_name":"Dronten","latitude":52.53333,"longitude":5.7,"datetime":"2014-08-09 00:00:00","temperature_max":"23.7","temperature_min":"16.8","precipitation_probability":"70","precipitation_mm":"11.0"},{"station_id":12180,"place_name":"Dronten","latitude":52.53333,"longitude":5.7,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"14.1","precipitation_probability":"85","precipitation_mm":"11.0"},{"station_id":12180,"place_name":"Dronten","latitude":52.53333,"longitude":5.7,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.9","precipitation_probability":"80","precipitation_mm":"4.7"},{"station_id":12180,"place_name":"Dronten","latitude":52.53333,"longitude":5.7,"datetime":"2014-08-12 00:00:00","temperature_max":"20.9","temperature_min":"13.7","precipitation_probability":"80","precipitation_mm":"9.7"},{"station_id":12181,"place_name":"Gorinchem","latitude":51.83333,"longitude":4.95,"datetime":"2014-08-08 00:00:00","temperature_max":"23.6","temperature_min":"15.3","precipitation_probability":"90","precipitation_mm":"4.5"},{"station_id":12181,"place_name":"Gorinchem","latitude":51.83333,"longitude":4.95,"datetime":"2014-08-09 00:00:00","temperature_max":"23.6","temperature_min":"16.0","precipitation_probability":"70","precipitation_mm":"11.7"},{"station_id":12181,"place_name":"Gorinchem","latitude":51.83333,"longitude":4.95,"datetime":"2014-08-10 00:00:00","temperature_max":"26.4","temperature_min":"14.5","precipitation_probability":"90","precipitation_mm":"5.3"},{"station_id":12181,"place_name":"Gorinchem","latitude":51.83333,"longitude":4.95,"datetime":"2014-08-11 00:00:00","temperature_max":"21.2","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"4.9"},{"station_id":12181,"place_name":"Gorinchem","latitude":51.83333,"longitude":4.95,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"13.3","precipitation_probability":"80","precipitation_mm":"5.8"},{"station_id":12182,"place_name":"Dordrecht","latitude":51.8,"longitude":4.666667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.1","temperature_min":"15.5","precipitation_probability":"90","precipitation_mm":"5.8"},{"station_id":12182,"place_name":"Dordrecht","latitude":51.8,"longitude":4.666667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.0","temperature_min":"16.3","precipitation_probability":"55","precipitation_mm":"3.4"},{"station_id":12182,"place_name":"Dordrecht","latitude":51.8,"longitude":4.666667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.6","temperature_min":"14.4","precipitation_probability":"80","precipitation_mm":"8.6"},{"station_id":12182,"place_name":"Dordrecht","latitude":51.8,"longitude":4.666667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"14.5","precipitation_probability":"75","precipitation_mm":"3.7"},{"station_id":12182,"place_name":"Dordrecht","latitude":51.8,"longitude":4.666667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.0","temperature_min":"13.4","precipitation_probability":"80","precipitation_mm":"4.7"},{"station_id":12183,"place_name":"Weert","latitude":51.25,"longitude":5.7,"datetime":"2014-08-08 00:00:00","temperature_max":"24.7","temperature_min":"15.3","precipitation_probability":"95","precipitation_mm":"3.7"},{"station_id":12183,"place_name":"Weert","latitude":51.25,"longitude":5.7,"datetime":"2014-08-09 00:00:00","temperature_max":"25.2","temperature_min":"17.4","precipitation_probability":"65","precipitation_mm":"7.4"},{"station_id":12183,"place_name":"Weert","latitude":51.25,"longitude":5.7,"datetime":"2014-08-10 00:00:00","temperature_max":"26.4","temperature_min":"13.5","precipitation_probability":"85","precipitation_mm":"4.8"},{"station_id":12183,"place_name":"Weert","latitude":51.25,"longitude":5.7,"datetime":"2014-08-11 00:00:00","temperature_max":"22.4","temperature_min":"14.1","precipitation_probability":"85","precipitation_mm":"2.3"},{"station_id":12183,"place_name":"Weert","latitude":51.25,"longitude":5.7,"datetime":"2014-08-12 00:00:00","temperature_max":"21.9","temperature_min":"12.8","precipitation_probability":"60","precipitation_mm":"3.1"},{"station_id":12184,"place_name":"Hulst","latitude":51.28333,"longitude":4.05,"datetime":"2014-08-08 00:00:00","temperature_max":"23.6","temperature_min":"15.7","precipitation_probability":"95","precipitation_mm":"6.3"},{"station_id":12184,"place_name":"Hulst","latitude":51.28333,"longitude":4.05,"datetime":"2014-08-09 00:00:00","temperature_max":"24.5","temperature_min":"15.9","precipitation_probability":"40","precipitation_mm":"4.0"},{"station_id":12184,"place_name":"Hulst","latitude":51.28333,"longitude":4.05,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"13.3","precipitation_probability":"90","precipitation_mm":"10.7"},{"station_id":12184,"place_name":"Hulst","latitude":51.28333,"longitude":4.05,"datetime":"2014-08-11 00:00:00","temperature_max":"20.6","temperature_min":"14.2","precipitation_probability":"90","precipitation_mm":"5.9"},{"station_id":12184,"place_name":"Hulst","latitude":51.28333,"longitude":4.05,"datetime":"2014-08-12 00:00:00","temperature_max":"21.6","temperature_min":"13.5","precipitation_probability":"70","precipitation_mm":"4.6"},{"station_id":12185,"place_name":"Winterswijk","latitude":51.96667,"longitude":6.716667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.6","temperature_min":"11.8","precipitation_probability":"80","precipitation_mm":"15.8"},{"station_id":12185,"place_name":"Winterswijk","latitude":51.96667,"longitude":6.716667,"datetime":"2014-08-09 00:00:00","temperature_max":"25.0","temperature_min":"16.4","precipitation_probability":"50","precipitation_mm":"9.0"},{"station_id":12185,"place_name":"Winterswijk","latitude":51.96667,"longitude":6.716667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.8","temperature_min":"14.5","precipitation_probability":"75","precipitation_mm":"4.7"},{"station_id":12185,"place_name":"Winterswijk","latitude":51.96667,"longitude":6.716667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.7","temperature_min":"14.3","precipitation_probability":"80","precipitation_mm":"7.1"},{"station_id":12185,"place_name":"Winterswijk","latitude":51.96667,"longitude":6.716667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"13.0","precipitation_probability":"75","precipitation_mm":"4.1"},{"station_id":12186,"place_name":"Lochem","latitude":52.16667,"longitude":6.4,"datetime":"2014-08-08 00:00:00","temperature_max":"25.0","temperature_min":"13.4","precipitation_probability":"90","precipitation_mm":"17.0"},{"station_id":12186,"place_name":"Lochem","latitude":52.16667,"longitude":6.4,"datetime":"2014-08-09 00:00:00","temperature_max":"24.7","temperature_min":"16.5","precipitation_probability":"60","precipitation_mm":"9.3"},{"station_id":12186,"place_name":"Lochem","latitude":52.16667,"longitude":6.4,"datetime":"2014-08-10 00:00:00","temperature_max":"26.8","temperature_min":"14.8","precipitation_probability":"80","precipitation_mm":"7.7"},{"station_id":12186,"place_name":"Lochem","latitude":52.16667,"longitude":6.4,"datetime":"2014-08-11 00:00:00","temperature_max":"22.2","temperature_min":"14.0","precipitation_probability":"75","precipitation_mm":"4.9"},{"station_id":12186,"place_name":"Lochem","latitude":52.16667,"longitude":6.4,"datetime":"2014-08-12 00:00:00","temperature_max":"21.3","temperature_min":"13.1","precipitation_probability":"70","precipitation_mm":"3.2"},{"station_id":12187,"place_name":"Wieringerwerf","latitude":52.83333,"longitude":5.033333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.5","temperature_min":"16.0","precipitation_probability":"90","precipitation_mm":"5.1"},{"station_id":12187,"place_name":"Wieringerwerf","latitude":52.83333,"longitude":5.033333,"datetime":"2014-08-09 00:00:00","temperature_max":"21.8","temperature_min":"17.7","precipitation_probability":"65","precipitation_mm":"7.7"},{"station_id":12187,"place_name":"Wieringerwerf","latitude":52.83333,"longitude":5.033333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.3","temperature_min":"14.8","precipitation_probability":"85","precipitation_mm":"9.8"},{"station_id":12187,"place_name":"Wieringerwerf","latitude":52.83333,"longitude":5.033333,"datetime":"2014-08-11 00:00:00","temperature_max":"20.7","temperature_min":"16.7","precipitation_probability":"60","precipitation_mm":"2.4"},{"station_id":12187,"place_name":"Wieringerwerf","latitude":52.83333,"longitude":5.033333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.2","temperature_min":"15.2","precipitation_probability":"75","precipitation_mm":"5.3"},{"station_id":12188,"place_name":"Sneek","latitude":53.03333,"longitude":5.65,"datetime":"2014-08-08 00:00:00","temperature_max":"24.2","temperature_min":"11.1","precipitation_probability":"85","precipitation_mm":"13.5"},{"station_id":12188,"place_name":"Sneek","latitude":53.03333,"longitude":5.65,"datetime":"2014-08-09 00:00:00","temperature_max":"23.4","temperature_min":"17.2","precipitation_probability":"90","precipitation_mm":"8.1"},{"station_id":12188,"place_name":"Sneek","latitude":53.03333,"longitude":5.65,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"13.8","precipitation_probability":"75","precipitation_mm":"8.8"},{"station_id":12188,"place_name":"Sneek","latitude":53.03333,"longitude":5.65,"datetime":"2014-08-11 00:00:00","temperature_max":"21.4","temperature_min":"15.5","precipitation_probability":"80","precipitation_mm":"8.4"},{"station_id":12188,"place_name":"Sneek","latitude":53.03333,"longitude":5.65,"datetime":"2014-08-12 00:00:00","temperature_max":"21.4","temperature_min":"14.3","precipitation_probability":"75","precipitation_mm":"14.0"},{"station_id":12189,"place_name":"Harlingen","latitude":53.18333,"longitude":5.433333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.6","temperature_min":"10.8","precipitation_probability":"75","precipitation_mm":"5.0"},{"station_id":12189,"place_name":"Harlingen","latitude":53.18333,"longitude":5.433333,"datetime":"2014-08-09 00:00:00","temperature_max":"22.8","temperature_min":"16.7","precipitation_probability":"70","precipitation_mm":"12.1"},{"station_id":12189,"place_name":"Harlingen","latitude":53.18333,"longitude":5.433333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.6","temperature_min":"14.8","precipitation_probability":"65","precipitation_mm":"8.7"},{"station_id":12189,"place_name":"Harlingen","latitude":53.18333,"longitude":5.433333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"15.9","precipitation_probability":"60","precipitation_mm":"6.1"},{"station_id":12189,"place_name":"Harlingen","latitude":53.18333,"longitude":5.433333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.7","temperature_min":"14.4","precipitation_probability":"65","precipitation_mm":"6.2"},{"station_id":12190,"place_name":"Dokkum","latitude":53.31667,"longitude":6,"datetime":"2014-08-08 00:00:00","temperature_max":"24.8","temperature_min":"9.9","precipitation_probability":"80","precipitation_mm":"4.9"},{"station_id":12190,"place_name":"Dokkum","latitude":53.31667,"longitude":6,"datetime":"2014-08-09 00:00:00","temperature_max":"22.9","temperature_min":"17.1","precipitation_probability":"75","precipitation_mm":"13.3"},{"station_id":12190,"place_name":"Dokkum","latitude":53.31667,"longitude":6,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"15.4","precipitation_probability":"75","precipitation_mm":"10.1"},{"station_id":12190,"place_name":"Dokkum","latitude":53.31667,"longitude":6,"datetime":"2014-08-11 00:00:00","temperature_max":"21.4","temperature_min":"15.9","precipitation_probability":"55","precipitation_mm":"5.6"},{"station_id":12190,"place_name":"Dokkum","latitude":53.31667,"longitude":6,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"14.6","precipitation_probability":"70","precipitation_mm":"4.3"},{"station_id":12191,"place_name":"Drachten","latitude":53.1,"longitude":6.083333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.6","temperature_min":"10.6","precipitation_probability":"85","precipitation_mm":"13.5"},{"station_id":12191,"place_name":"Drachten","latitude":53.1,"longitude":6.083333,"datetime":"2014-08-09 00:00:00","temperature_max":"23.9","temperature_min":"16.6","precipitation_probability":"85","precipitation_mm":"10.8"},{"station_id":12191,"place_name":"Drachten","latitude":53.1,"longitude":6.083333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"13.4","precipitation_probability":"80","precipitation_mm":"9.7"},{"station_id":12191,"place_name":"Drachten","latitude":53.1,"longitude":6.083333,"datetime":"2014-08-11 00:00:00","temperature_max":"22.0","temperature_min":"14.9","precipitation_probability":"70","precipitation_mm":"6.3"},{"station_id":12191,"place_name":"Drachten","latitude":53.1,"longitude":6.083333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"13.5","precipitation_probability":"85","precipitation_mm":"7.7"},{"station_id":12192,"place_name":"Winschoten","latitude":53.15,"longitude":7.033333,"datetime":"2014-08-08 00:00:00","temperature_max":"25.5","temperature_min":"11.6","precipitation_probability":"65","precipitation_mm":"9.7"},{"station_id":12192,"place_name":"Winschoten","latitude":53.15,"longitude":7.033333,"datetime":"2014-08-09 00:00:00","temperature_max":"25.3","temperature_min":"17.1","precipitation_probability":"90","precipitation_mm":"16.2"},{"station_id":12192,"place_name":"Winschoten","latitude":53.15,"longitude":7.033333,"datetime":"2014-08-10 00:00:00","temperature_max":"28.2","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"6.3"},{"station_id":12192,"place_name":"Winschoten","latitude":53.15,"longitude":7.033333,"datetime":"2014-08-11 00:00:00","temperature_max":"23.2","temperature_min":"15.0","precipitation_probability":"75","precipitation_mm":"6.0"},{"station_id":12192,"place_name":"Winschoten","latitude":53.15,"longitude":7.033333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.7","temperature_min":"13.3","precipitation_probability":"85","precipitation_mm":"3.7"},{"station_id":12193,"place_name":"Veendam","latitude":53.1,"longitude":6.866667,"datetime":"2014-08-08 00:00:00","temperature_max":"25.2","temperature_min":"10.3","precipitation_probability":"75","precipitation_mm":"8.3"},{"station_id":12193,"place_name":"Veendam","latitude":53.1,"longitude":6.866667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.2","temperature_min":"16.7","precipitation_probability":"85","precipitation_mm":"14.2"},{"station_id":12193,"place_name":"Veendam","latitude":53.1,"longitude":6.866667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.0","temperature_min":"13.8","precipitation_probability":"80","precipitation_mm":"10.1"},{"station_id":12193,"place_name":"Veendam","latitude":53.1,"longitude":6.866667,"datetime":"2014-08-11 00:00:00","temperature_max":"22.5","temperature_min":"14.8","precipitation_probability":"70","precipitation_mm":"5.3"},{"station_id":12193,"place_name":"Veendam","latitude":53.1,"longitude":6.866667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.6","temperature_min":"12.8","precipitation_probability":"85","precipitation_mm":"5.4"},{"station_id":12194,"place_name":"Bergen op Zoom","latitude":51.5,"longitude":4.283333,"datetime":"2014-08-08 00:00:00","temperature_max":"22.9","temperature_min":"15.1","precipitation_probability":"95","precipitation_mm":"5.6"},{"station_id":12194,"place_name":"Bergen op Zoom","latitude":51.5,"longitude":4.283333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.4","temperature_min":"16.0","precipitation_probability":"55","precipitation_mm":"2.3"},{"station_id":12194,"place_name":"Bergen op Zoom","latitude":51.5,"longitude":4.283333,"datetime":"2014-08-10 00:00:00","temperature_max":"27.2","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"6.1"},{"station_id":12194,"place_name":"Bergen op Zoom","latitude":51.5,"longitude":4.283333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.4","temperature_min":"14.0","precipitation_probability":"55","precipitation_mm":"2.5"},{"station_id":12194,"place_name":"Bergen op Zoom","latitude":51.5,"longitude":4.283333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"13.2","precipitation_probability":"80","precipitation_mm":"4.0"},{"station_id":12195,"place_name":"Schagen","latitude":52.78333,"longitude":4.783333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.5","temperature_min":"16.0","precipitation_probability":"90","precipitation_mm":"5.1"},{"station_id":12195,"place_name":"Schagen","latitude":52.78333,"longitude":4.783333,"datetime":"2014-08-09 00:00:00","temperature_max":"21.8","temperature_min":"17.7","precipitation_probability":"65","precipitation_mm":"7.7"},{"station_id":12195,"place_name":"Schagen","latitude":52.78333,"longitude":4.783333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.3","temperature_min":"14.8","precipitation_probability":"85","precipitation_mm":"9.8"},{"station_id":12195,"place_name":"Schagen","latitude":52.78333,"longitude":4.783333,"datetime":"2014-08-11 00:00:00","temperature_max":"20.7","temperature_min":"16.7","precipitation_probability":"60","precipitation_mm":"2.4"},{"station_id":12195,"place_name":"Schagen","latitude":52.78333,"longitude":4.783333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.2","temperature_min":"15.2","precipitation_probability":"75","precipitation_mm":"5.3"},{"station_id":12196,"place_name":"Sexbierum","latitude":53.21667,"longitude":5.483333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.6","temperature_min":"10.8","precipitation_probability":"75","precipitation_mm":"5.0"},{"station_id":12196,"place_name":"Sexbierum","latitude":53.21667,"longitude":5.483333,"datetime":"2014-08-09 00:00:00","temperature_max":"22.8","temperature_min":"16.7","precipitation_probability":"70","precipitation_mm":"12.1"},{"station_id":12196,"place_name":"Sexbierum","latitude":53.21667,"longitude":5.483333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.6","temperature_min":"14.8","precipitation_probability":"65","precipitation_mm":"8.7"},{"station_id":12196,"place_name":"Sexbierum","latitude":53.21667,"longitude":5.483333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"15.9","precipitation_probability":"60","precipitation_mm":"6.1"},{"station_id":12196,"place_name":"Sexbierum","latitude":53.21667,"longitude":5.483333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.7","temperature_min":"14.4","precipitation_probability":"65","precipitation_mm":"6.2"},{"station_id":12197,"place_name":"Schiermonnikoog","latitude":53.48333,"longitude":6.166667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.2","temperature_min":"10.7","precipitation_probability":"85","precipitation_mm":"4.9"},{"station_id":12197,"place_name":"Schiermonnikoog","latitude":53.48333,"longitude":6.166667,"datetime":"2014-08-09 00:00:00","temperature_max":"22.5","temperature_min":"17.5","precipitation_probability":"85","precipitation_mm":"14.3"},{"station_id":12197,"place_name":"Schiermonnikoog","latitude":53.48333,"longitude":6.166667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.1","temperature_min":"15.4","precipitation_probability":"85","precipitation_mm":"6.7"},{"station_id":12197,"place_name":"Schiermonnikoog","latitude":53.48333,"longitude":6.166667,"datetime":"2014-08-11 00:00:00","temperature_max":"20.9","temperature_min":"16.4","precipitation_probability":"55","precipitation_mm":"4.5"},{"station_id":12197,"place_name":"Schiermonnikoog","latitude":53.48333,"longitude":6.166667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.4","temperature_min":"15.0","precipitation_probability":"70","precipitation_mm":"8.5"},{"station_id":12204,"place_name":"Hilversum","latitude":52.23333,"longitude":5.183333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"14.4","precipitation_probability":"85","precipitation_mm":"7.1"},{"station_id":12204,"place_name":"Hilversum","latitude":52.23333,"longitude":5.183333,"datetime":"2014-08-09 00:00:00","temperature_max":"23.6","temperature_min":"16.6","precipitation_probability":"55","precipitation_mm":"6.7"},{"station_id":12204,"place_name":"Hilversum","latitude":52.23333,"longitude":5.183333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.8","temperature_min":"14.1","precipitation_probability":"80","precipitation_mm":"9.4"},{"station_id":12204,"place_name":"Hilversum","latitude":52.23333,"longitude":5.183333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.5","temperature_min":"14.9","precipitation_probability":"60","precipitation_mm":"4.0"},{"station_id":12204,"place_name":"Hilversum","latitude":52.23333,"longitude":5.183333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"13.6","precipitation_probability":"65","precipitation_mm":"4.1"},{"station_id":12205,"place_name":"Woerden","latitude":52.08333,"longitude":4.883333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.5","temperature_min":"15.4","precipitation_probability":"95","precipitation_mm":"5.5"},{"station_id":12205,"place_name":"Woerden","latitude":52.08333,"longitude":4.883333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.4","temperature_min":"15.8","precipitation_probability":"55","precipitation_mm":"6.1"},{"station_id":12205,"place_name":"Woerden","latitude":52.08333,"longitude":4.883333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.3","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"4.9"},{"station_id":12205,"place_name":"Woerden","latitude":52.08333,"longitude":4.883333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.9","temperature_min":"14.4","precipitation_probability":"70","precipitation_mm":"3.0"},{"station_id":12205,"place_name":"Woerden","latitude":52.08333,"longitude":4.883333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.2","temperature_min":"13.4","precipitation_probability":"80","precipitation_mm":"3.2"},{"station_id":12206,"place_name":"Culemborg","latitude":51.95,"longitude":5.216667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.6","temperature_min":"15.3","precipitation_probability":"90","precipitation_mm":"4.5"},{"station_id":12206,"place_name":"Culemborg","latitude":51.95,"longitude":5.216667,"datetime":"2014-08-09 00:00:00","temperature_max":"23.6","temperature_min":"16.0","precipitation_probability":"70","precipitation_mm":"11.7"},{"station_id":12206,"place_name":"Culemborg","latitude":51.95,"longitude":5.216667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.4","temperature_min":"14.5","precipitation_probability":"90","precipitation_mm":"5.3"},{"station_id":12206,"place_name":"Culemborg","latitude":51.95,"longitude":5.216667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.2","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"4.9"},{"station_id":12206,"place_name":"Culemborg","latitude":51.95,"longitude":5.216667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"13.3","precipitation_probability":"80","precipitation_mm":"5.8"},{"station_id":12207,"place_name":"Joure","latitude":52.96667,"longitude":5.783333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.2","temperature_min":"11.1","precipitation_probability":"85","precipitation_mm":"13.5"},{"station_id":12207,"place_name":"Joure","latitude":52.96667,"longitude":5.783333,"datetime":"2014-08-09 00:00:00","temperature_max":"23.4","temperature_min":"17.2","precipitation_probability":"90","precipitation_mm":"8.1"},{"station_id":12207,"place_name":"Joure","latitude":52.96667,"longitude":5.783333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"13.8","precipitation_probability":"75","precipitation_mm":"8.8"},{"station_id":12207,"place_name":"Joure","latitude":52.96667,"longitude":5.783333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.4","temperature_min":"15.5","precipitation_probability":"80","precipitation_mm":"8.4"},{"station_id":12207,"place_name":"Joure","latitude":52.96667,"longitude":5.783333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.4","temperature_min":"14.3","precipitation_probability":"75","precipitation_mm":"14.0"},{"station_id":12306,"place_name":"Doetinchem","latitude":51.96667,"longitude":6.283333,"datetime":"2014-08-08 00:00:00","temperature_max":"25.5","temperature_min":"13.5","precipitation_probability":"90","precipitation_mm":"6.6"},{"station_id":12306,"place_name":"Doetinchem","latitude":51.96667,"longitude":6.283333,"datetime":"2014-08-09 00:00:00","temperature_max":"25.4","temperature_min":"16.5","precipitation_probability":"55","precipitation_mm":"4.2"},{"station_id":12306,"place_name":"Doetinchem","latitude":51.96667,"longitude":6.283333,"datetime":"2014-08-10 00:00:00","temperature_max":"28.0","temperature_min":"14.7","precipitation_probability":"85","precipitation_mm":"1.6"},{"station_id":12306,"place_name":"Doetinchem","latitude":51.96667,"longitude":6.283333,"datetime":"2014-08-11 00:00:00","temperature_max":"22.8","temperature_min":"13.8","precipitation_probability":"70","precipitation_mm":"1.8"},{"station_id":12306,"place_name":"Doetinchem","latitude":51.96667,"longitude":6.283333,"datetime":"2014-08-12 00:00:00","temperature_max":"22.5","temperature_min":"12.4","precipitation_probability":"70","precipitation_mm":"1.8"},{"station_id":12307,"place_name":"Breda","latitude":51.6,"longitude":4.783333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.0","temperature_min":"15.2","precipitation_probability":"100","precipitation_mm":"6.8"},{"station_id":12307,"place_name":"Breda","latitude":51.6,"longitude":4.783333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.5","temperature_min":"15.5","precipitation_probability":"60","precipitation_mm":"3.2"},{"station_id":12307,"place_name":"Breda","latitude":51.6,"longitude":4.783333,"datetime":"2014-08-10 00:00:00","temperature_max":"27.4","temperature_min":"14.7","precipitation_probability":"85","precipitation_mm":"6.9"},{"station_id":12307,"place_name":"Breda","latitude":51.6,"longitude":4.783333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"1.8"},{"station_id":12307,"place_name":"Breda","latitude":51.6,"longitude":4.783333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"13.6","precipitation_probability":"75","precipitation_mm":"3.3"},{"station_id":12452,"place_name":"Aardenburg","latitude":51.26667,"longitude":3.433333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.7","temperature_min":"17.2","precipitation_probability":"95","precipitation_mm":"6.1"},{"station_id":12452,"place_name":"Aardenburg","latitude":51.26667,"longitude":3.433333,"datetime":"2014-08-09 00:00:00","temperature_max":"23.0","temperature_min":"16.5","precipitation_probability":"45","precipitation_mm":"1.7"},{"station_id":12452,"place_name":"Aardenburg","latitude":51.26667,"longitude":3.433333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.4","temperature_min":"16.1","precipitation_probability":"90","precipitation_mm":"8.9"},{"station_id":12452,"place_name":"Aardenburg","latitude":51.26667,"longitude":3.433333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.5","temperature_min":"14.8","precipitation_probability":"70","precipitation_mm":"1.9"},{"station_id":12452,"place_name":"Aardenburg","latitude":51.26667,"longitude":3.433333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"14.3","precipitation_probability":"70","precipitation_mm":"3.8"},{"station_id":12453,"place_name":"Baarle-Nassau","latitude":51.45,"longitude":4.933333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.0","temperature_min":"15.2","precipitation_probability":"100","precipitation_mm":"6.8"},{"station_id":12453,"place_name":"Baarle-Nassau","latitude":51.45,"longitude":4.933333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.5","temperature_min":"15.5","precipitation_probability":"60","precipitation_mm":"3.2"},{"station_id":12453,"place_name":"Baarle-Nassau","latitude":51.45,"longitude":4.933333,"datetime":"2014-08-10 00:00:00","temperature_max":"27.4","temperature_min":"14.7","precipitation_probability":"85","precipitation_mm":"6.9"},{"station_id":12453,"place_name":"Baarle-Nassau","latitude":51.45,"longitude":4.933333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"1.8"},{"station_id":12453,"place_name":"Baarle-Nassau","latitude":51.45,"longitude":4.933333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"13.6","precipitation_probability":"75","precipitation_mm":"3.3"},{"station_id":12454,"place_name":"Beilen","latitude":52.86666,"longitude":6.516667,"datetime":"2014-08-08 00:00:00","temperature_max":"25.2","temperature_min":"10.3","precipitation_probability":"75","precipitation_mm":"14.2"},{"station_id":12454,"place_name":"Beilen","latitude":52.86666,"longitude":6.516667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.2","temperature_min":"16.5","precipitation_probability":"80","precipitation_mm":"14.3"},{"station_id":12454,"place_name":"Beilen","latitude":52.86666,"longitude":6.516667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.1","temperature_min":"13.5","precipitation_probability":"70","precipitation_mm":"6.9"},{"station_id":12454,"place_name":"Beilen","latitude":52.86666,"longitude":6.516667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"14.3","precipitation_probability":"80","precipitation_mm":"6.3"},{"station_id":12454,"place_name":"Beilen","latitude":52.86666,"longitude":6.516667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.9","temperature_min":"12.5","precipitation_probability":"75","precipitation_mm":"6.9"},{"station_id":12455,"place_name":"Bladel","latitude":51.36666,"longitude":5.216667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"17.0","precipitation_probability":"95","precipitation_mm":"8.0"},{"station_id":12455,"place_name":"Bladel","latitude":51.36666,"longitude":5.216667,"datetime":"2014-08-09 00:00:00","temperature_max":"25.2","temperature_min":"16.3","precipitation_probability":"55","precipitation_mm":"6.2"},{"station_id":12455,"place_name":"Bladel","latitude":51.36666,"longitude":5.216667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.6","temperature_min":"15.2","precipitation_probability":"80","precipitation_mm":"7.2"},{"station_id":12455,"place_name":"Bladel","latitude":51.36666,"longitude":5.216667,"datetime":"2014-08-11 00:00:00","temperature_max":"22.3","temperature_min":"14.3","precipitation_probability":"75","precipitation_mm":"3.6"},{"station_id":12455,"place_name":"Bladel","latitude":51.36666,"longitude":5.216667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.6","temperature_min":"12.9","precipitation_probability":"80","precipitation_mm":"5.2"},{"station_id":12456,"place_name":"Boxmeer","latitude":51.65,"longitude":5.95,"datetime":"2014-08-08 00:00:00","temperature_max":"25.1","temperature_min":"15.8","precipitation_probability":"90","precipitation_mm":"22.6"},{"station_id":12456,"place_name":"Boxmeer","latitude":51.65,"longitude":5.95,"datetime":"2014-08-09 00:00:00","temperature_max":"25.6","temperature_min":"16.8","precipitation_probability":"65","precipitation_mm":"10.3"},{"station_id":12456,"place_name":"Boxmeer","latitude":51.65,"longitude":5.95,"datetime":"2014-08-10 00:00:00","temperature_max":"26.5","temperature_min":"16.9","precipitation_probability":"80","precipitation_mm":"6.6"},{"station_id":12456,"place_name":"Boxmeer","latitude":51.65,"longitude":5.95,"datetime":"2014-08-11 00:00:00","temperature_max":"22.4","temperature_min":"15.1","precipitation_probability":"70","precipitation_mm":"2.4"},{"station_id":12456,"place_name":"Boxmeer","latitude":51.65,"longitude":5.95,"datetime":"2014-08-12 00:00:00","temperature_max":"21.9","temperature_min":"13.7","precipitation_probability":"70","precipitation_mm":"4.6"},{"station_id":12457,"place_name":"Boxtel","latitude":51.58333,"longitude":5.333333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.8","temperature_min":"16.2","precipitation_probability":"95","precipitation_mm":"7.0"},{"station_id":12457,"place_name":"Boxtel","latitude":51.58333,"longitude":5.333333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.7","temperature_min":"16.3","precipitation_probability":"65","precipitation_mm":"6.3"},{"station_id":12457,"place_name":"Boxtel","latitude":51.58333,"longitude":5.333333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.2","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"6.3"},{"station_id":12457,"place_name":"Boxtel","latitude":51.58333,"longitude":5.333333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.9","temperature_min":"14.3","precipitation_probability":"75","precipitation_mm":"3.9"},{"station_id":12457,"place_name":"Boxtel","latitude":51.58333,"longitude":5.333333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.2","temperature_min":"13.1","precipitation_probability":"75","precipitation_mm":"5.6"},{"station_id":12458,"place_name":"Breskens","latitude":51.4,"longitude":3.566667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.1","temperature_min":"17.9","precipitation_probability":"90","precipitation_mm":"6.1"},{"station_id":12458,"place_name":"Breskens","latitude":51.4,"longitude":3.566667,"datetime":"2014-08-09 00:00:00","temperature_max":"22.2","temperature_min":"16.7","precipitation_probability":"50","precipitation_mm":"2.3"},{"station_id":12458,"place_name":"Breskens","latitude":51.4,"longitude":3.566667,"datetime":"2014-08-10 00:00:00","temperature_max":"24.6","temperature_min":"17.4","precipitation_probability":"90","precipitation_mm":"9.3"},{"station_id":12458,"place_name":"Breskens","latitude":51.4,"longitude":3.566667,"datetime":"2014-08-11 00:00:00","temperature_max":"20.2","temperature_min":"15.4","precipitation_probability":"80","precipitation_mm":"2.0"},{"station_id":12458,"place_name":"Breskens","latitude":51.4,"longitude":3.566667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"15.3","precipitation_probability":"70","precipitation_mm":"4.2"},{"station_id":12459,"place_name":"Coevorden","latitude":52.66667,"longitude":6.75,"datetime":"2014-08-08 00:00:00","temperature_max":"25.6","temperature_min":"13.5","precipitation_probability":"75","precipitation_mm":"15.6"},{"station_id":12459,"place_name":"Coevorden","latitude":52.66667,"longitude":6.75,"datetime":"2014-08-09 00:00:00","temperature_max":"24.6","temperature_min":"16.9","precipitation_probability":"70","precipitation_mm":"16.8"},{"station_id":12459,"place_name":"Coevorden","latitude":52.66667,"longitude":6.75,"datetime":"2014-08-10 00:00:00","temperature_max":"25.3","temperature_min":"15.1","precipitation_probability":"65","precipitation_mm":"5.7"},{"station_id":12459,"place_name":"Coevorden","latitude":52.66667,"longitude":6.75,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.8","precipitation_probability":"80","precipitation_mm":"5.9"},{"station_id":12459,"place_name":"Coevorden","latitude":52.66667,"longitude":6.75,"datetime":"2014-08-12 00:00:00","temperature_max":"21.2","temperature_min":"13.2","precipitation_probability":"75","precipitation_mm":"4.4"},{"station_id":12460,"place_name":"Delfzijl","latitude":53.33333,"longitude":6.916667,"datetime":"2014-08-08 00:00:00","temperature_max":"25.5","temperature_min":"11.6","precipitation_probability":"65","precipitation_mm":"9.7"},{"station_id":12460,"place_name":"Delfzijl","latitude":53.33333,"longitude":6.916667,"datetime":"2014-08-09 00:00:00","temperature_max":"25.3","temperature_min":"17.1","precipitation_probability":"90","precipitation_mm":"16.2"},{"station_id":12460,"place_name":"Delfzijl","latitude":53.33333,"longitude":6.916667,"datetime":"2014-08-10 00:00:00","temperature_max":"28.2","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"6.3"},{"station_id":12460,"place_name":"Delfzijl","latitude":53.33333,"longitude":6.916667,"datetime":"2014-08-11 00:00:00","temperature_max":"23.2","temperature_min":"15.0","precipitation_probability":"75","precipitation_mm":"6.0"},{"station_id":12460,"place_name":"Delfzijl","latitude":53.33333,"longitude":6.916667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.7","temperature_min":"13.3","precipitation_probability":"85","precipitation_mm":"3.7"},{"station_id":12461,"place_name":"Den Oever","latitude":52.93333,"longitude":5.033333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.5","temperature_min":"16.0","precipitation_probability":"90","precipitation_mm":"5.1"},{"station_id":12461,"place_name":"Den Oever","latitude":52.93333,"longitude":5.033333,"datetime":"2014-08-09 00:00:00","temperature_max":"21.8","temperature_min":"17.7","precipitation_probability":"65","precipitation_mm":"7.7"},{"station_id":12461,"place_name":"Den Oever","latitude":52.93333,"longitude":5.033333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.3","temperature_min":"14.8","precipitation_probability":"85","precipitation_mm":"9.8"},{"station_id":12461,"place_name":"Den Oever","latitude":52.93333,"longitude":5.033333,"datetime":"2014-08-11 00:00:00","temperature_max":"20.7","temperature_min":"16.7","precipitation_probability":"60","precipitation_mm":"2.4"},{"station_id":12461,"place_name":"Den Oever","latitude":52.93333,"longitude":5.033333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.2","temperature_min":"15.2","precipitation_probability":"75","precipitation_mm":"5.3"},{"station_id":12462,"place_name":"Denekamp","latitude":52.38334,"longitude":7,"datetime":"2014-08-08 00:00:00","temperature_max":"25.7","temperature_min":"12.4","precipitation_probability":"65","precipitation_mm":"8.6"},{"station_id":12462,"place_name":"Denekamp","latitude":52.38334,"longitude":7,"datetime":"2014-08-09 00:00:00","temperature_max":"25.0","temperature_min":"17.3","precipitation_probability":"65","precipitation_mm":"8.9"},{"station_id":12462,"place_name":"Denekamp","latitude":52.38334,"longitude":7,"datetime":"2014-08-10 00:00:00","temperature_max":"26.1","temperature_min":"14.5","precipitation_probability":"70","precipitation_mm":"6.7"},{"station_id":12462,"place_name":"Denekamp","latitude":52.38334,"longitude":7,"datetime":"2014-08-11 00:00:00","temperature_max":"22.3","temperature_min":"14.5","precipitation_probability":"60","precipitation_mm":"4.8"},{"station_id":12462,"place_name":"Denekamp","latitude":52.38334,"longitude":7,"datetime":"2014-08-12 00:00:00","temperature_max":"21.4","temperature_min":"13.5","precipitation_probability":"65","precipitation_mm":"4.5"},{"station_id":12463,"place_name":"Eijsden","latitude":50.78333,"longitude":5.7,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"16.2","precipitation_probability":"95","precipitation_mm":"5.9"},{"station_id":12463,"place_name":"Eijsden","latitude":50.78333,"longitude":5.7,"datetime":"2014-08-09 00:00:00","temperature_max":"25.0","temperature_min":"16.7","precipitation_probability":"50","precipitation_mm":"9.3"},{"station_id":12463,"place_name":"Eijsden","latitude":50.78333,"longitude":5.7,"datetime":"2014-08-10 00:00:00","temperature_max":"26.9","temperature_min":"16.2","precipitation_probability":"90","precipitation_mm":"8.6"},{"station_id":12463,"place_name":"Eijsden","latitude":50.78333,"longitude":5.7,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.5","precipitation_probability":"70","precipitation_mm":"2.7"},{"station_id":12463,"place_name":"Eijsden","latitude":50.78333,"longitude":5.7,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"13.3","precipitation_probability":"75","precipitation_mm":"3.9"},{"station_id":12464,"place_name":"Emmeloord","latitude":52.71667,"longitude":5.733333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"12.9","precipitation_probability":"85","precipitation_mm":"15.2"},{"station_id":12464,"place_name":"Emmeloord","latitude":52.71667,"longitude":5.733333,"datetime":"2014-08-09 00:00:00","temperature_max":"23.5","temperature_min":"17.0","precipitation_probability":"85","precipitation_mm":"9.8"},{"station_id":12464,"place_name":"Emmeloord","latitude":52.71667,"longitude":5.733333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"8.7"},{"station_id":12464,"place_name":"Emmeloord","latitude":52.71667,"longitude":5.733333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.4","temperature_min":"15.2","precipitation_probability":"85","precipitation_mm":"7.7"},{"station_id":12464,"place_name":"Emmeloord","latitude":52.71667,"longitude":5.733333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.2","temperature_min":"14.0","precipitation_probability":"80","precipitation_mm":"15.5"},{"station_id":12465,"place_name":"Enkhuizen","latitude":52.7,"longitude":5.3,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"14.4","precipitation_probability":"90","precipitation_mm":"6.9"},{"station_id":12465,"place_name":"Enkhuizen","latitude":52.7,"longitude":5.3,"datetime":"2014-08-09 00:00:00","temperature_max":"22.7","temperature_min":"17.3","precipitation_probability":"65","precipitation_mm":"8.4"},{"station_id":12465,"place_name":"Enkhuizen","latitude":52.7,"longitude":5.3,"datetime":"2014-08-10 00:00:00","temperature_max":"25.0","temperature_min":"13.9","precipitation_probability":"80","precipitation_mm":"5.8"},{"station_id":12465,"place_name":"Enkhuizen","latitude":52.7,"longitude":5.3,"datetime":"2014-08-11 00:00:00","temperature_max":"20.8","temperature_min":"15.5","precipitation_probability":"60","precipitation_mm":"3.6"},{"station_id":12465,"place_name":"Enkhuizen","latitude":52.7,"longitude":5.3,"datetime":"2014-08-12 00:00:00","temperature_max":"20.7","temperature_min":"14.7","precipitation_probability":"70","precipitation_mm":"4.8"},{"station_id":12466,"place_name":"Epe","latitude":52.35,"longitude":5.983333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.2","temperature_min":"13.3","precipitation_probability":"90","precipitation_mm":"23.2"},{"station_id":12466,"place_name":"Epe","latitude":52.35,"longitude":5.983333,"datetime":"2014-08-09 00:00:00","temperature_max":"23.9","temperature_min":"16.5","precipitation_probability":"60","precipitation_mm":"11.1"},{"station_id":12466,"place_name":"Epe","latitude":52.35,"longitude":5.983333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.4","temperature_min":"14.0","precipitation_probability":"80","precipitation_mm":"11.9"},{"station_id":12466,"place_name":"Epe","latitude":52.35,"longitude":5.983333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.8","temperature_min":"14.4","precipitation_probability":"70","precipitation_mm":"4.9"},{"station_id":12466,"place_name":"Epe","latitude":52.35,"longitude":5.983333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.8","temperature_min":"13.1","precipitation_probability":"70","precipitation_mm":"3.6"},{"station_id":12467,"place_name":"Hardenberg","latitude":52.56667,"longitude":6.616667,"datetime":"2014-08-08 00:00:00","temperature_max":"25.6","temperature_min":"13.5","precipitation_probability":"75","precipitation_mm":"15.6"},{"station_id":12467,"place_name":"Hardenberg","latitude":52.56667,"longitude":6.616667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.6","temperature_min":"16.9","precipitation_probability":"70","precipitation_mm":"16.8"},{"station_id":12467,"place_name":"Hardenberg","latitude":52.56667,"longitude":6.616667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.3","temperature_min":"15.1","precipitation_probability":"65","precipitation_mm":"5.7"},{"station_id":12467,"place_name":"Hardenberg","latitude":52.56667,"longitude":6.616667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.8","precipitation_probability":"80","precipitation_mm":"5.9"},{"station_id":12467,"place_name":"Hardenberg","latitude":52.56667,"longitude":6.616667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.2","temperature_min":"13.2","precipitation_probability":"75","precipitation_mm":"4.4"},{"station_id":12468,"place_name":"Hoenderloo","latitude":52.11666,"longitude":5.883333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"13.7","precipitation_probability":"95","precipitation_mm":"25.7"},{"station_id":12468,"place_name":"Hoenderloo","latitude":52.11666,"longitude":5.883333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.0","temperature_min":"16.1","precipitation_probability":"75","precipitation_mm":"9.1"},{"station_id":12468,"place_name":"Hoenderloo","latitude":52.11666,"longitude":5.883333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.3","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"8.2"},{"station_id":12468,"place_name":"Hoenderloo","latitude":52.11666,"longitude":5.883333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.7","precipitation_probability":"80","precipitation_mm":"5.0"},{"station_id":12468,"place_name":"Hoenderloo","latitude":52.11666,"longitude":5.883333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.4","temperature_min":"12.6","precipitation_probability":"70","precipitation_mm":"6.1"},{"station_id":12469,"place_name":"Kollum","latitude":53.28333,"longitude":6.15,"datetime":"2014-08-08 00:00:00","temperature_max":"24.8","temperature_min":"9.9","precipitation_probability":"80","precipitation_mm":"4.9"},{"station_id":12469,"place_name":"Kollum","latitude":53.28333,"longitude":6.15,"datetime":"2014-08-09 00:00:00","temperature_max":"22.9","temperature_min":"17.1","precipitation_probability":"75","precipitation_mm":"13.3"},{"station_id":12469,"place_name":"Kollum","latitude":53.28333,"longitude":6.15,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"15.4","precipitation_probability":"75","precipitation_mm":"10.1"},{"station_id":12469,"place_name":"Kollum","latitude":53.28333,"longitude":6.15,"datetime":"2014-08-11 00:00:00","temperature_max":"21.4","temperature_min":"15.9","precipitation_probability":"55","precipitation_mm":"5.6"},{"station_id":12469,"place_name":"Kollum","latitude":53.28333,"longitude":6.15,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"14.6","precipitation_probability":"70","precipitation_mm":"4.3"},{"station_id":12470,"place_name":"Maasbracht","latitude":51.15,"longitude":5.9,"datetime":"2014-08-08 00:00:00","temperature_max":"24.7","temperature_min":"15.3","precipitation_probability":"95","precipitation_mm":"3.7"},{"station_id":12470,"place_name":"Maasbracht","latitude":51.15,"longitude":5.9,"datetime":"2014-08-09 00:00:00","temperature_max":"25.2","temperature_min":"17.4","precipitation_probability":"65","precipitation_mm":"7.4"},{"station_id":12470,"place_name":"Maasbracht","latitude":51.15,"longitude":5.9,"datetime":"2014-08-10 00:00:00","temperature_max":"26.4","temperature_min":"13.5","precipitation_probability":"85","precipitation_mm":"4.8"},{"station_id":12470,"place_name":"Maasbracht","latitude":51.15,"longitude":5.9,"datetime":"2014-08-11 00:00:00","temperature_max":"22.4","temperature_min":"14.1","precipitation_probability":"85","precipitation_mm":"2.3"},{"station_id":12470,"place_name":"Maasbracht","latitude":51.15,"longitude":5.9,"datetime":"2014-08-12 00:00:00","temperature_max":"21.9","temperature_min":"12.8","precipitation_probability":"60","precipitation_mm":"3.1"},{"station_id":12471,"place_name":"Nijkerk","latitude":52.21667,"longitude":5.483333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.0","temperature_min":"13.6","precipitation_probability":"60","precipitation_mm":"8.5"},{"station_id":12471,"place_name":"Nijkerk","latitude":52.21667,"longitude":5.483333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.2","temperature_min":"15.6","precipitation_probability":"35","precipitation_mm":"5.2"},{"station_id":12471,"place_name":"Nijkerk","latitude":52.21667,"longitude":5.483333,"datetime":"2014-08-10 00:00:00","temperature_max":"27.2","temperature_min":"13.5","precipitation_probability":"70","precipitation_mm":"8.8"},{"station_id":12471,"place_name":"Nijkerk","latitude":52.21667,"longitude":5.483333,"datetime":"2014-08-11 00:00:00","temperature_max":"22.2","temperature_min":"13.5","precipitation_probability":"15","precipitation_mm":"1.7"},{"station_id":12471,"place_name":"Nijkerk","latitude":52.21667,"longitude":5.483333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.4","temperature_min":"13.1","precipitation_probability":"45","precipitation_mm":"3.3"},{"station_id":12472,"place_name":"Nijverdal","latitude":52.36666,"longitude":6.466667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.9","temperature_min":"13.0","precipitation_probability":"85","precipitation_mm":"19.6"},{"station_id":12472,"place_name":"Nijverdal","latitude":52.36666,"longitude":6.466667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.3","temperature_min":"16.6","precipitation_probability":"60","precipitation_mm":"14.0"},{"station_id":12472,"place_name":"Nijverdal","latitude":52.36666,"longitude":6.466667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.0","temperature_min":"14.5","precipitation_probability":"80","precipitation_mm":"12.6"},{"station_id":12472,"place_name":"Nijverdal","latitude":52.36666,"longitude":6.466667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.3","precipitation_probability":"80","precipitation_mm":"7.4"},{"station_id":12472,"place_name":"Nijverdal","latitude":52.36666,"longitude":6.466667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.5","temperature_min":"13.3","precipitation_probability":"75","precipitation_mm":"4.8"},{"station_id":12473,"place_name":"Oss","latitude":51.76667,"longitude":5.516667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.7","temperature_min":"14.3","precipitation_probability":"90","precipitation_mm":"8.1"},{"station_id":12473,"place_name":"Oss","latitude":51.76667,"longitude":5.516667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.4","temperature_min":"16.4","precipitation_probability":"70","precipitation_mm":"10.4"},{"station_id":12473,"place_name":"Oss","latitude":51.76667,"longitude":5.516667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.5","temperature_min":"14.5","precipitation_probability":"85","precipitation_mm":"3.4"},{"station_id":12473,"place_name":"Oss","latitude":51.76667,"longitude":5.516667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.0","precipitation_probability":"75","precipitation_mm":"2.5"},{"station_id":12473,"place_name":"Oss","latitude":51.76667,"longitude":5.516667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.8","temperature_min":"13.3","precipitation_probability":"75","precipitation_mm":"6.0"},{"station_id":12474,"place_name":"Pieterburen","latitude":53.4,"longitude":6.45,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"15.5","precipitation_probability":"70","precipitation_mm":"4.2"},{"station_id":12474,"place_name":"Pieterburen","latitude":53.4,"longitude":6.45,"datetime":"2014-08-09 00:00:00","temperature_max":"22.3","temperature_min":"17.4","precipitation_probability":"70","precipitation_mm":"14.3"},{"station_id":12474,"place_name":"Pieterburen","latitude":53.4,"longitude":6.45,"datetime":"2014-08-10 00:00:00","temperature_max":"25.6","temperature_min":"16.1","precipitation_probability":"85","precipitation_mm":"10.7"},{"station_id":12474,"place_name":"Pieterburen","latitude":53.4,"longitude":6.45,"datetime":"2014-08-11 00:00:00","temperature_max":"20.7","temperature_min":"16.6","precipitation_probability":"40","precipitation_mm":"4.5"},{"station_id":12474,"place_name":"Pieterburen","latitude":53.4,"longitude":6.45,"datetime":"2014-08-12 00:00:00","temperature_max":"20.1","temperature_min":"14.7","precipitation_probability":"65","precipitation_mm":"2.5"},{"station_id":12475,"place_name":"Purmerend","latitude":52.5,"longitude":4.95,"datetime":"2014-08-08 00:00:00","temperature_max":"24.1","temperature_min":"15.1","precipitation_probability":"85","precipitation_mm":"4.9"},{"station_id":12475,"place_name":"Purmerend","latitude":52.5,"longitude":4.95,"datetime":"2014-08-09 00:00:00","temperature_max":"23.1","temperature_min":"17.4","precipitation_probability":"70","precipitation_mm":"6.3"},{"station_id":12475,"place_name":"Purmerend","latitude":52.5,"longitude":4.95,"datetime":"2014-08-10 00:00:00","temperature_max":"25.2","temperature_min":"14.6","precipitation_probability":"85","precipitation_mm":"11.4"},{"station_id":12475,"place_name":"Purmerend","latitude":52.5,"longitude":4.95,"datetime":"2014-08-11 00:00:00","temperature_max":"21.4","temperature_min":"15.3","precipitation_probability":"75","precipitation_mm":"3.6"},{"station_id":12475,"place_name":"Purmerend","latitude":52.5,"longitude":4.95,"datetime":"2014-08-12 00:00:00","temperature_max":"20.6","temperature_min":"13.9","precipitation_probability":"80","precipitation_mm":"6.6"},{"station_id":12476,"place_name":"Spijkenisse","latitude":51.85,"longitude":4.333333,"datetime":"2014-08-08 00:00:00","temperature_max":"24.9","temperature_min":"15.0","precipitation_probability":"90","precipitation_mm":"3.4"},{"station_id":12476,"place_name":"Spijkenisse","latitude":51.85,"longitude":4.333333,"datetime":"2014-08-09 00:00:00","temperature_max":"23.2","temperature_min":"16.6","precipitation_probability":"55","precipitation_mm":"5.4"},{"station_id":12476,"place_name":"Spijkenisse","latitude":51.85,"longitude":4.333333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.5","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"15.3"},{"station_id":12476,"place_name":"Spijkenisse","latitude":51.85,"longitude":4.333333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"15.3","precipitation_probability":"65","precipitation_mm":"6.5"},{"station_id":12476,"place_name":"Spijkenisse","latitude":51.85,"longitude":4.333333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.0","temperature_min":"14.4","precipitation_probability":"75","precipitation_mm":"6.6"},{"station_id":12477,"place_name":"Steenwijk","latitude":52.78333,"longitude":6.116667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.5","temperature_min":"11.3","precipitation_probability":"85","precipitation_mm":"16.6"},{"station_id":12477,"place_name":"Steenwijk","latitude":52.78333,"longitude":6.116667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.0","temperature_min":"16.6","precipitation_probability":"85","precipitation_mm":"11.9"},{"station_id":12477,"place_name":"Steenwijk","latitude":52.78333,"longitude":6.116667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.4","temperature_min":"13.4","precipitation_probability":"70","precipitation_mm":"6.7"},{"station_id":12477,"place_name":"Steenwijk","latitude":52.78333,"longitude":6.116667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.7","precipitation_probability":"80","precipitation_mm":"7.2"},{"station_id":12477,"place_name":"Steenwijk","latitude":52.78333,"longitude":6.116667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"13.2","precipitation_probability":"80","precipitation_mm":"10.6"},{"station_id":12478,"place_name":"Terneuzen","latitude":51.33333,"longitude":3.833333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.6","temperature_min":"15.7","precipitation_probability":"95","precipitation_mm":"6.3"},{"station_id":12478,"place_name":"Terneuzen","latitude":51.33333,"longitude":3.833333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.5","temperature_min":"15.9","precipitation_probability":"40","precipitation_mm":"4.0"},{"station_id":12478,"place_name":"Terneuzen","latitude":51.33333,"longitude":3.833333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"13.3","precipitation_probability":"90","precipitation_mm":"10.7"},{"station_id":12478,"place_name":"Terneuzen","latitude":51.33333,"longitude":3.833333,"datetime":"2014-08-11 00:00:00","temperature_max":"20.6","temperature_min":"14.2","precipitation_probability":"90","precipitation_mm":"5.9"},{"station_id":12478,"place_name":"Terneuzen","latitude":51.33333,"longitude":3.833333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.6","temperature_min":"13.5","precipitation_probability":"70","precipitation_mm":"4.6"},{"station_id":12479,"place_name":"Vaals","latitude":50.76667,"longitude":6.016667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.9","temperature_min":"15.8","precipitation_probability":"95","precipitation_mm":"9.6"},{"station_id":12479,"place_name":"Vaals","latitude":50.76667,"longitude":6.016667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.7","temperature_min":"17.1","precipitation_probability":"70","precipitation_mm":"3.4"},{"station_id":12479,"place_name":"Vaals","latitude":50.76667,"longitude":6.016667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.4","temperature_min":"16.3","precipitation_probability":"90","precipitation_mm":"7.7"},{"station_id":12479,"place_name":"Vaals","latitude":50.76667,"longitude":6.016667,"datetime":"2014-08-11 00:00:00","temperature_max":"22.6","temperature_min":"15.6","precipitation_probability":"65","precipitation_mm":"0.9"},{"station_id":12479,"place_name":"Vaals","latitude":50.76667,"longitude":6.016667,"datetime":"2014-08-12 00:00:00","temperature_max":"22.2","temperature_min":"13.7","precipitation_probability":"75","precipitation_mm":"1.9"},{"station_id":12480,"place_name":"Venlo","latitude":51.36666,"longitude":6.166667,"datetime":"2014-08-08 00:00:00","temperature_max":"24.7","temperature_min":"15.2","precipitation_probability":"90","precipitation_mm":"5.3"},{"station_id":12480,"place_name":"Venlo","latitude":51.36666,"longitude":6.166667,"datetime":"2014-08-09 00:00:00","temperature_max":"25.5","temperature_min":"17.6","precipitation_probability":"40","precipitation_mm":"10.2"},{"station_id":12480,"place_name":"Venlo","latitude":51.36666,"longitude":6.166667,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"14.9","precipitation_probability":"80","precipitation_mm":"5.8"},{"station_id":12480,"place_name":"Venlo","latitude":51.36666,"longitude":6.166667,"datetime":"2014-08-11 00:00:00","temperature_max":"22.5","temperature_min":"14.1","precipitation_probability":"65","precipitation_mm":"2.4"},{"station_id":12480,"place_name":"Venlo","latitude":51.36666,"longitude":6.166667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.9","temperature_min":"13.4","precipitation_probability":"55","precipitation_mm":"2.3"},{"station_id":12481,"place_name":"Waalwijk","latitude":51.68333,"longitude":5.083333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.0","temperature_min":"15.2","precipitation_probability":"95","precipitation_mm":"5.2"},{"station_id":12481,"place_name":"Waalwijk","latitude":51.68333,"longitude":5.083333,"datetime":"2014-08-09 00:00:00","temperature_max":"24.1","temperature_min":"15.8","precipitation_probability":"60","precipitation_mm":"7.8"},{"station_id":12481,"place_name":"Waalwijk","latitude":51.68333,"longitude":5.083333,"datetime":"2014-08-10 00:00:00","temperature_max":"26.6","temperature_min":"14.5","precipitation_probability":"85","precipitation_mm":"5.6"},{"station_id":12481,"place_name":"Waalwijk","latitude":51.68333,"longitude":5.083333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.2","temperature_min":"14.2","precipitation_probability":"75","precipitation_mm":"3.8"},{"station_id":12481,"place_name":"Waalwijk","latitude":51.68333,"longitude":5.083333,"datetime":"2014-08-12 00:00:00","temperature_max":"20.7","temperature_min":"13.4","precipitation_probability":"75","precipitation_mm":"4.9"},{"station_id":12482,"place_name":"Zevenbergen","latitude":51.65,"longitude":4.6,"datetime":"2014-08-08 00:00:00","temperature_max":"23.1","temperature_min":"15.5","precipitation_probability":"90","precipitation_mm":"5.8"},{"station_id":12482,"place_name":"Zevenbergen","latitude":51.65,"longitude":4.6,"datetime":"2014-08-09 00:00:00","temperature_max":"24.0","temperature_min":"16.3","precipitation_probability":"55","precipitation_mm":"3.4"},{"station_id":12482,"place_name":"Zevenbergen","latitude":51.65,"longitude":4.6,"datetime":"2014-08-10 00:00:00","temperature_max":"26.6","temperature_min":"14.4","precipitation_probability":"80","precipitation_mm":"8.6"},{"station_id":12482,"place_name":"Zevenbergen","latitude":51.65,"longitude":4.6,"datetime":"2014-08-11 00:00:00","temperature_max":"21.3","temperature_min":"14.5","precipitation_probability":"75","precipitation_mm":"3.7"},{"station_id":12482,"place_name":"Zevenbergen","latitude":51.65,"longitude":4.6,"datetime":"2014-08-12 00:00:00","temperature_max":"21.0","temperature_min":"13.4","precipitation_probability":"80","precipitation_mm":"4.7"},{"station_id":12483,"place_name":"Appelscha","latitude":52.95,"longitude":6.35,"datetime":"2014-08-08 00:00:00","temperature_max":"24.6","temperature_min":"10.6","precipitation_probability":"85","precipitation_mm":"13.5"},{"station_id":12483,"place_name":"Appelscha","latitude":52.95,"longitude":6.35,"datetime":"2014-08-09 00:00:00","temperature_max":"23.9","temperature_min":"16.6","precipitation_probability":"85","precipitation_mm":"10.8"},{"station_id":12483,"place_name":"Appelscha","latitude":52.95,"longitude":6.35,"datetime":"2014-08-10 00:00:00","temperature_max":"25.9","temperature_min":"13.4","precipitation_probability":"80","precipitation_mm":"9.7"},{"station_id":12483,"place_name":"Appelscha","latitude":52.95,"longitude":6.35,"datetime":"2014-08-11 00:00:00","temperature_max":"22.0","temperature_min":"14.9","precipitation_probability":"70","precipitation_mm":"6.3"},{"station_id":12483,"place_name":"Appelscha","latitude":52.95,"longitude":6.35,"datetime":"2014-08-12 00:00:00","temperature_max":"21.5","temperature_min":"13.5","precipitation_probability":"85","precipitation_mm":"7.7"},{"station_id":12484,"place_name":"Beneden-Leeuwen","latitude":51.88334,"longitude":5.516667,"datetime":"2014-08-08 00:00:00","temperature_max":"23.7","temperature_min":"14.3","precipitation_probability":"90","precipitation_mm":"8.1"},{"station_id":12484,"place_name":"Beneden-Leeuwen","latitude":51.88334,"longitude":5.516667,"datetime":"2014-08-09 00:00:00","temperature_max":"24.4","temperature_min":"16.4","precipitation_probability":"70","precipitation_mm":"10.4"},{"station_id":12484,"place_name":"Beneden-Leeuwen","latitude":51.88334,"longitude":5.516667,"datetime":"2014-08-10 00:00:00","temperature_max":"26.5","temperature_min":"14.5","precipitation_probability":"85","precipitation_mm":"3.4"},{"station_id":12484,"place_name":"Beneden-Leeuwen","latitude":51.88334,"longitude":5.516667,"datetime":"2014-08-11 00:00:00","temperature_max":"21.6","temperature_min":"14.0","precipitation_probability":"75","precipitation_mm":"2.5"},{"station_id":12484,"place_name":"Beneden-Leeuwen","latitude":51.88334,"longitude":5.516667,"datetime":"2014-08-12 00:00:00","temperature_max":"20.8","temperature_min":"13.3","precipitation_probability":"75","precipitation_mm":"6.0"},{"station_id":12485,"place_name":"Gendringen","latitude":51.86666,"longitude":6.366667,"datetime":"2014-08-08 00:00:00","temperature_max":"25.5","temperature_min":"13.5","precipitation_probability":"90","precipitation_mm":"6.6"},{"station_id":12485,"place_name":"Gendringen","latitude":51.86666,"longitude":6.366667,"datetime":"2014-08-09 00:00:00","temperature_max":"25.4","temperature_min":"16.5","precipitation_probability":"55","precipitation_mm":"4.2"},{"station_id":12485,"place_name":"Gendringen","latitude":51.86666,"longitude":6.366667,"datetime":"2014-08-10 00:00:00","temperature_max":"28.0","temperature_min":"14.7","precipitation_probability":"85","precipitation_mm":"1.6"},{"station_id":12485,"place_name":"Gendringen","latitude":51.86666,"longitude":6.366667,"datetime":"2014-08-11 00:00:00","temperature_max":"22.8","temperature_min":"13.8","precipitation_probability":"70","precipitation_mm":"1.8"},{"station_id":12485,"place_name":"Gendringen","latitude":51.86666,"longitude":6.366667,"datetime":"2014-08-12 00:00:00","temperature_max":"22.5","temperature_min":"12.4","precipitation_probability":"70","precipitation_mm":"1.8"},{"station_id":12486,"place_name":"Oude-Tonge","latitude":51.7,"longitude":4.2,"datetime":"2014-08-08 00:00:00","temperature_max":"23.3","temperature_min":"16.5","precipitation_probability":"95","precipitation_mm":"2.3"},{"station_id":12486,"place_name":"Oude-Tonge","latitude":51.7,"longitude":4.2,"datetime":"2014-08-09 00:00:00","temperature_max":"22.5","temperature_min":"16.9","precipitation_probability":"55","precipitation_mm":"2.1"},{"station_id":12486,"place_name":"Oude-Tonge","latitude":51.7,"longitude":4.2,"datetime":"2014-08-10 00:00:00","temperature_max":"27.3","temperature_min":"15.0","precipitation_probability":"85","precipitation_mm":"8.4"},{"station_id":12486,"place_name":"Oude-Tonge","latitude":51.7,"longitude":4.2,"datetime":"2014-08-11 00:00:00","temperature_max":"21.2","temperature_min":"15.1","precipitation_probability":"75","precipitation_mm":"3.5"},{"station_id":12486,"place_name":"Oude-Tonge","latitude":51.7,"longitude":4.2,"datetime":"2014-08-12 00:00:00","temperature_max":"21.4","temperature_min":"14.3","precipitation_probability":"75","precipitation_mm":"4.9"},{"station_id":12487,"place_name":"Rottumeroog","latitude":53.55,"longitude":6.583333,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"14.7","precipitation_probability":"70","precipitation_mm":"4.1"},{"station_id":12487,"place_name":"Rottumeroog","latitude":53.55,"longitude":6.583333,"datetime":"2014-08-09 00:00:00","temperature_max":"23.1","temperature_min":"18.0","precipitation_probability":"85","precipitation_mm":"17.0"},{"station_id":12487,"place_name":"Rottumeroog","latitude":53.55,"longitude":6.583333,"datetime":"2014-08-10 00:00:00","temperature_max":"25.1","temperature_min":"15.1","precipitation_probability":"80","precipitation_mm":"3.7"},{"station_id":12487,"place_name":"Rottumeroog","latitude":53.55,"longitude":6.583333,"datetime":"2014-08-11 00:00:00","temperature_max":"21.2","temperature_min":"16.0","precipitation_probability":"55","precipitation_mm":"4.4"},{"station_id":12487,"place_name":"Rottumeroog","latitude":53.55,"longitude":6.583333,"datetime":"2014-08-12 00:00:00","temperature_max":"21.1","temperature_min":"15.0","precipitation_probability":"75","precipitation_mm":"12.4"},{"station_id":12488,"place_name":"Stadskanaal","latitude":52.98333,"longitude":6.966667,"datetime":"2014-08-08 00:00:00","temperature_max":"25.5","temperature_min":"11.6","precipitation_probability":"65","precipitation_mm":"9.7"},{"station_id":12488,"place_name":"Stadskanaal","latitude":52.98333,"longitude":6.966667,"datetime":"2014-08-09 00:00:00","temperature_max":"25.3","temperature_min":"17.1","precipitation_probability":"90","precipitation_mm":"16.2"},{"station_id":12488,"place_name":"Stadskanaal","latitude":52.98333,"longitude":6.966667,"datetime":"2014-08-10 00:00:00","temperature_max":"28.2","temperature_min":"14.1","precipitation_probability":"75","precipitation_mm":"6.3"},{"station_id":12488,"place_name":"Stadskanaal","latitude":52.98333,"longitude":6.966667,"datetime":"2014-08-11 00:00:00","temperature_max":"23.2","temperature_min":"15.0","precipitation_probability":"75","precipitation_mm":"6.0"},{"station_id":12488,"place_name":"Stadskanaal","latitude":52.98333,"longitude":6.966667,"datetime":"2014-08-12 00:00:00","temperature_max":"21.7","temperature_min":"13.3","precipitation_probability":"85","precipitation_mm":"3.7"},{"station_id":15942,"place_name":"SnowWorld Landgraaf","latitude":50.8667,"longitude":6.0167,"datetime":"2014-08-08 00:00:00","temperature_max":"24.3","temperature_min":"16.2","precipitation_probability":"95","precipitation_mm":"6.4"},{"station_id":15942,"place_name":"SnowWorld Landgraaf","latitude":50.8667,"longitude":6.0167,"datetime":"2014-08-09 00:00:00","temperature_max":"24.8","temperature_min":"16.8","precipitation_probability":"65","precipitation_mm":"6.1"},{"station_id":15942,"place_name":"SnowWorld Landgraaf","latitude":50.8667,"longitude":6.0167,"datetime":"2014-08-10 00:00:00","temperature_max":"26.6","temperature_min":"16.3","precipitation_probability":"90","precipitation_mm":"6.9"},{"station_id":15942,"place_name":"SnowWorld Landgraaf","latitude":50.8667,"longitude":6.0167,"datetime":"2014-08-11 00:00:00","temperature_max":"22.3","temperature_min":"15.0","precipitation_probability":"65","precipitation_mm":"1.5"},{"station_id":15942,"place_name":"SnowWorld Landgraaf","latitude":50.8667,"longitude":6.0167,"datetime":"2014-08-12 00:00:00","temperature_max":"21.9","temperature_min":"13.7","precipitation_probability":"80","precipitation_mm":"2.7"},{"station_id":16538,"place_name":"Houtribdijk","latitude":52.65,"longitude":5.4,"datetime":"2014-08-08 00:00:00","temperature_max":"23.9","temperature_min":"14.4","precipitation_probability":"90","precipitation_mm":"6.9"},{"station_id":16538,"place_name":"Houtribdijk","latitude":52.65,"longitude":5.4,"datetime":"2014-08-09 00:00:00","temperature_max":"22.7","temperature_min":"17.3","precipitation_probability":"65","precipitation_mm":"8.4"},{"station_id":16538,"place_name":"Houtribdijk","latitude":52.65,"longitude":5.4,"datetime":"2014-08-10 00:00:00","temperature_max":"25.0","temperature_min":"13.9","precipitation_probability":"80","precipitation_mm":"5.8"},{"station_id":16538,"place_name":"Houtribdijk","latitude":52.65,"longitude":5.4,"datetime":"2014-08-11 00:00:00","temperature_max":"20.8","temperature_min":"15.5","precipitation_probability":"60","precipitation_mm":"3.6"},{"station_id":16538,"place_name":"Houtribdijk","latitude":52.65,"longitude":5.4,"datetime":"2014-08-12 00:00:00","temperature_max":"20.7","temperature_min":"14.7","precipitation_probability":"70","precipitation_mm":"4.8"}];
