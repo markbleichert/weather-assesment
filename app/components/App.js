@@ -13,8 +13,8 @@ require('../styles/global.less');
 var App = React.createClass({
 
 	propTypes: {
-		locations: React.PropTypes.object,
-		favorites: React.PropTypes.object
+		locations: React.PropTypes.object.isRequired,
+		favorites: React.PropTypes.object.isRequired
 	},
 
 	onChange() {
