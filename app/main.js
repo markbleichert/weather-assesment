@@ -5,11 +5,9 @@ var LocationsStore = require('./stores/LocationsStore');
 var FavoritesStore = require('./stores/FavoritesStore');
 var FavoritesResource = require('./stores/FavoritesResource');
 var StoresManager = require('./stores/StoresManager');
-var data = require('./fixtures/data-json');
-
 
 // setup locations store
-var locationsStore = new LocationsStore(data);
+var locationsStore = new LocationsStore();
 
 // set up favorite store with local storage impl.
 var favoritesStoreImpl = new FavoritesResource(window.localStorage);

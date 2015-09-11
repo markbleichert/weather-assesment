@@ -42,11 +42,11 @@ class FavoritesStore extends EventEmitter {
 
 			switch(action.actionType) {
 				case Constants.ADD_FAVORITE:
-					this.resource.addFavorite(payload.action.item);
+					this.add(payload.action.item);
 					break;
 
 				case Constants.REMOVE_FAVORITE:
-					this.resource.removeFavorite(payload.action.item);
+					this.remove(payload.action.item);
 					break;
 
 			}

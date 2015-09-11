@@ -1,5 +1,5 @@
 var FluxDispatcher = require('flux').Dispatcher;
-var assign = require('React/lib/Object.assign');
+var assign = require('react/lib/Object.assign');
 
 var Dispatcher = assign(new FluxDispatcher(), {
 	handleViewAction(action) {

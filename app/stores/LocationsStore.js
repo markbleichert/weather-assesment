@@ -6,7 +6,7 @@ class LocationsStore extends EventEmitter {
 	constructor(locations) {
 		super();
 		this.activeLocation = 'Amsterdam';
-		this.locations = locations;
+		this.locations = [];
 
 		this.registerDispatcher();
 	}
@@ -25,6 +25,10 @@ class LocationsStore extends EventEmitter {
 
 	setActiveLocation(name) {
 		this.activeLocation = name;
+	}
+
+	updateLocations(locations) {
+		this.locations = locations;
 	}
 
 	getLocationItems() {
@@ -67,6 +71,15 @@ class LocationsStore extends EventEmitter {
 			switch(action.actionType) {
 				case Constants.SET_ACTIVE_LOCATION:
 					this.setActiveLocation(payload.action.name);
+					break;
+
+				case Constants.UPDATE_LOCATIONS:
+					this.updateLocations(payload.action.locations);
+					break;
+
+				case Constants.LOCATIONS_FAILED:
+					// for now just log it !
+					console.log(payload.action.locations);
 					break;
 
 			}

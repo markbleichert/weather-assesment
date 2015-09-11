@@ -25,8 +25,9 @@ var App = React.createClass({
 
 	onLocationChange() {
 		this.setState({
+			locationList: this.props.locations.getLocationList(),
 			currentLocationSet: this.props.locations.getLocationItems()
-		})
+		});
 	},
 
 	componentWillMount() {
@@ -39,10 +40,15 @@ var App = React.createClass({
 		this.props.locations.removeChangeListener(this.onLocationChange);
 	},
 
+	componentDidMount() {
+		Actions.fetchLocations();
+	},
+
 	getInitialState() {
 		return {
-			favorites: this.props.favorites.getFavorites(),
-			currentLocationSet: this.props.locations.getLocationItems()
+			favorites: [],
+			currentLocationSet: [],
+			locationList: []
 		};
 	},
 
@@ -74,8 +80,14 @@ var App = React.createClass({
 	},
 
 	render() {
-		return (
+		// show placeholder until data is loaded
+		if (!this.state.locationList.length) {
+			return (
+				<div className='loading'>Loading..</div>
+			)
+		}
 
+		return (
 			<div>
 				<div className={'row'}>
 					<div className={'col-md-12'}>
@@ -88,7 +100,7 @@ var App = React.createClass({
 						<SearchBox
 							onSearch={this.onNewLocation}
 							label='Locations'
-							data={this.props.locations.getLocationList()} />
+							data={this.state.locationList} />
 
 						<FavoritesList
 							locations={this.state.favorites}
