@@ -1,4 +1,4 @@
-class FavoritesResource {
+class FavoritesSource {
 	constructor(localStorage) {
 		this.localStorage = localStorage;
 
@@ -75,4 +75,4 @@ class FavoritesResource {
 	}
 }
 
-module.exports = FavoritesResource;
+module.exports = FavoritesSource;

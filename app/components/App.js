@@ -119,8 +119,7 @@ var App = React.createClass({
 						</div>
 						<div className={'row'}>
 							<div className={'col-md-6'}>
-								<WeatherBox
-									locations={this.state.currentLocationSet} />
+								<WeatherBox locations={this.state.currentLocationSet} />
 							</div>
 							<div className={'col-md-6'}>
 								<Map location={this.state.currentLocationSet[0]} />
