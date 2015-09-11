@@ -60,6 +60,7 @@ $ open index.html
 * [Flux](https://github.com/facebook/flux). - basic flux implementation
 * [classnames](https://www.npmjs.com/package/classnames) —  class name generator.
 * [GMaps](http://hpneo.github.io/gmaps/) —  google maps api.
+* [Chart.js](http://www.chartjs.org/) - Charts api
 
 
 ### Styles
