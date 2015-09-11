@@ -8,6 +8,7 @@ var CurrentLocation = require('./CurrentLocation');
 var FavoritesList = require('./favorites/FavoritesList');
 var FavoriteActions = require('../actions/FavoriteActions');
 var LocationActions = require('../actions/LocationActions');
+var Chart = require('./Chart');
 
 require('../styles/global.less');
 
@@ -119,16 +120,21 @@ var App = React.createClass({
 						</div>
 						<div className={'row'}>
 							<div className={'col-md-6'}>
-								<WeatherBox locations={this.state.currentLocationSet} />
+								<WeatherBox
+									locations={this.state.currentLocationSet} />
 							</div>
 							<div className={'col-md-6'}>
 								<Map location={this.state.currentLocationSet[0]} />
 							</div>
 						</div>
 						<div className={'row'}>
-							<div className={'col-md-12'}>
+							<div className={'col-md-8'}>
 								<h4>5 day forecast</h4>
 								<Forecast locations={this.state.currentLocationSet}/>
+							</div>
+							<div className={'col-md-4'}>
+								<h4>Percipitation outlook</h4>
+								<Chart locations={this.state.currentLocationSet}/>
 							</div>
 						</div>
 					</div>

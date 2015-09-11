@@ -1,7 +1,6 @@
 var React = require('react');
 var WeatherNavBar = require('./WeatherNavBar');
 var WeatherItem = require('./WeatherItem');
-var moment = require('moment');
 
 require('../../styles/WeatherBox.css');
 
