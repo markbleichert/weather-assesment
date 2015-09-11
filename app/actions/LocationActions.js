@@ -11,6 +11,9 @@ var LocationActions = {
 		});
 	},
 
+	// Instead of action calling another action
+	// we could dispatch an "DATA_LOADING" event
+	// to the store. Not sure what is better ?!
 	fetchLocations() {
 		LocationSource.fetch()
 			.then((locations) => {

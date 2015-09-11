@@ -6,20 +6,12 @@ require('../styles/Chart.css');
 
 var Chart = React.createClass({
 	render: function() {
-		var probabilityData = this.props.locations.map((location) => {
-			return location.precipitation_probability;
-		});
-
-		var percipitationyData = this.props.locations.map((location) => {
-			return location.precipitation_mm;
-		});
-
-		var labels = this.props.locations.map((location) => {
-			return moment(location.datetime).format('ddd');
-		});
 
 		var chartData = {
-			labels: labels,
+			labels: this.props.locations.map((location) => {
+				return moment(location.datetime).format('ddd');
+			}),
+
 			datasets: [
 				{
 					label: "Percipitation in mm",
@@ -29,7 +21,10 @@ var Chart = React.createClass({
 					pointStrokeColor: "#fff",
 					pointHighlightFill: "#fff",
 					pointHighlightStroke: "rgba(220,220,220,1)",
-					data: probabilityData
+
+					data: this.props.locations.map((location) => {
+						return location.precipitation_probability;
+					})
 				},
 				{
 					label: "Percipitation probability",
@@ -39,15 +34,16 @@ var Chart = React.createClass({
 					pointStrokeColor: "#fff",
 					pointHighlightFill: "#fff",
 					pointHighlightStroke: "rgba(151,187,205,1)",
-					data: percipitationyData
+
+					data: this.props.locations.map((location) => {
+						return location.precipitation_mm;
+					})
 				}
 			]
 		};
 
-		var chartOptions = {};
-
 		return (
-			<LineChart className='PercipitationChart' data={chartData} options={chartOptions}/>
+			<LineChart className='PercipitationChart' data={chartData} />
 		);
 	}
 });

@@ -48,7 +48,6 @@ class FavoritesStore extends EventEmitter {
 				case Constants.REMOVE_FAVORITE:
 					this.remove(payload.action.item);
 					break;
-
 			}
 
 			this.emitChange();

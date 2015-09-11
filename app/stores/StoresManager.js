@@ -1,3 +1,4 @@
+// not used for now
 class StoreManager {
 
 	constructor() {

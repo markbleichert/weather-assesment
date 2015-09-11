@@ -18,6 +18,7 @@ favoritesStore.add({'place_name':'Groningen'});
 favoritesStore.add({'place_name':'Maastricht'});
 
 // pass configured stores to React and get started
+// @todo: choose different store property names
 React.render(
 	<App favorites={favoritesStore} locations={locationsStore} />,
 	document.getElementById('main')

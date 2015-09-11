@@ -8,7 +8,7 @@ var LocationSource = {
 			setTimeout(function () {
 				// resolve with mock data
 				resolve(mockData);
-			}, 1500);
+			}, 1000);
 		});
 	}
 };

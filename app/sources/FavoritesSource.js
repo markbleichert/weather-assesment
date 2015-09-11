@@ -50,25 +50,21 @@ class FavoritesSource {
 	}
 
 	removeFavorite(location) {
-
 		var favorites = this.getFavorites();
 		var index = -1;
 
 		for (var i = 0; i < favorites.length; i++) {
-
 			if (favorites[i].location.place_name == location.place_name) {
 				index = i;
 				break;
 			}
-
 		}
 
 		// If it was found, remove it from the favorites array
-
 		if (index !== -1) {
-
 			favorites.splice(index, 1);
 
+			// put update array back into local storage
 			this._updateStorage(favorites);
 
 		}

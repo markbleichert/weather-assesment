@@ -15,7 +15,6 @@ var Map = React.createClass({
 	},
 
 	componentDidMount() {
-
 		// Only componentDidMount is called when the component is first added to
 		// the page. This is why we are calling the following method manually.
 		// This makes sure that our map initialization code is run the first time.
@@ -29,7 +28,6 @@ var Map = React.createClass({
 		var lng = this.props.location.longitude;
 
 		if (this.lastLat == lat && this.lastLng == lng) {
-
 			// The map has already been initialized at these coordinates.
 			// Return from this method so that we don't reinitialize it
 			// and cause it to flicker.
@@ -52,9 +50,9 @@ var Map = React.createClass({
 			}
 		});
 
-
 		// build info window content
-		var contentString = `<div class="info">Weather station: <br/> ${this.props.location.place_name} <br/> ${lat} - ${lng}</div>`;
+		var contentString = `<div class="info">Weather station: <br/> ` +
+				`${this.props.location.place_name} <br/> ${lat} - ${lng}</div>`;
 
 		var infowindow = new google.maps.InfoWindow({
 			content: contentString
@@ -71,7 +69,6 @@ var Map = React.createClass({
 
 		// open by default
 		infowindow.open(map, marker);
-
 	},
 
 	render() {

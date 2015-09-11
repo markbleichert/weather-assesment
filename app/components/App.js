@@ -4,11 +4,11 @@ var SearchBox = require('./SearchBox');
 var Forecast = require('./Forecast');
 var WeatherBox = require('./weatherbox/WeatherBox');
 var Map = require('./Map');
+var Chart = require('./Chart');
 var CurrentLocation = require('./CurrentLocation');
 var FavoritesList = require('./favorites/FavoritesList');
 var FavoriteActions = require('../actions/FavoriteActions');
 var LocationActions = require('../actions/LocationActions');
-var Chart = require('./Chart');
 
 require('../styles/global.less');
 
@@ -48,8 +48,11 @@ var App = React.createClass({
 
 	getInitialState() {
 		return {
+			// array of 'stored' favorite locations names
 			favorites: [],
+			// array of locations for one location
 			currentLocationSet: [],
+			// array of unique location names
 			locationList: []
 		};
 	},
