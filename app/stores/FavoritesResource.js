@@ -5,7 +5,11 @@ class FavoritesResource {
 	}
 
 	isFavorite(location) {
-		return (this._getByName(location) !== null);
+		if (!location) {
+			return false;
+		} else {
+			return (this._getByName(location) !== null);
+		}
 	}
 
 	_getByName(location) {
