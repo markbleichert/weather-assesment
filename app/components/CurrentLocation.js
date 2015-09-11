@@ -11,6 +11,7 @@ var CurrentLocation = React.createClass({
 
 	getDefaultProps() {
 		return {
+			favorite: {},
 			location: {}
 		};
 	},
