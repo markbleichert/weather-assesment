@@ -40,7 +40,7 @@ var Map = React.createClass({
 		this.lastLng = lng;
 
 		// get the map dom element
-		var mapDomElement = React.findDOMNode(this.refs.map)
+		var mapDomElement = React.findDOMNode(this.refs.map);
 
 		// create the map with our coordinates
 		var map = new google.maps.Map(mapDomElement, {

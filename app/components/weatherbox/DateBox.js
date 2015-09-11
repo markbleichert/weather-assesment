@@ -30,7 +30,7 @@ var DateBox = React.createClass({
 					{dateWeekMonth}
 				</span>
 			</div>
-		)
+		);
 	}
 });
 

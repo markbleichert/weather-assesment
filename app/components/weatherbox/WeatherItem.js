@@ -40,7 +40,7 @@ var WeatherItem = React.createClass({
 				<span className='percipitation mm'>{this.props.currentItem.precipitation_mm} mm</span>
 				<DateBox datetime={this.props.currentItem.datetime} />
 			</div>
-		)
+		);
 
 	}
 

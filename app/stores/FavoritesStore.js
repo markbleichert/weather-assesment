@@ -21,7 +21,7 @@ class FavoritesStore extends EventEmitter {
 	}
 
 	add(location) {
-		this.resource.addFavorite(location)
+		this.resource.addFavorite(location);
 	}
 
 	remove(location) {
@@ -40,7 +40,7 @@ class FavoritesStore extends EventEmitter {
 		return Dispatcher.register((payload) => {
 			var action = payload.action;
 
-			switch(action.actionType) {
+			switch (action.actionType) {
 				case Constants.ADD_FAVORITE:
 					this.add(payload.action.item);
 					break;

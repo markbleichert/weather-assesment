@@ -21,7 +21,7 @@ var App = React.createClass({
 	onFavoritesChange() {
 		this.setState({
 			favorites: this.props.favorites.getFavorites()
-		})
+		});
 	},
 
 	onLocationChange() {
@@ -58,7 +58,7 @@ var App = React.createClass({
 			'ERR': 'Unexpect error occured',
 			'ZERO_RESULTS': 'No results found',
 			'OK': ''
-		}
+		};
 
 		return map[status];
 	},
@@ -85,7 +85,7 @@ var App = React.createClass({
 		if (!this.state.locationList.length) {
 			return (
 				<div className='loading'>Loading..</div>
-			)
+			);
 		}
 
 		return (

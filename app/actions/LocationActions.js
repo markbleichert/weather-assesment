@@ -25,14 +25,14 @@ var LocationActions = {
 		Dispatcher.handleViewAction({
 			actionType: Constants.LOCATIONS_FAILED,
 			locations: errorMessage
-		})
+		});
 	},
 
 	updateLocations(data) {
 		Dispatcher.handleViewAction({
 			actionType: Constants.UPDATE_LOCATIONS,
 			locations: data
-		})
+		});
 	}
 };
 

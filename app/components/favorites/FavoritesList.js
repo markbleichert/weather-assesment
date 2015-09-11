@@ -1,7 +1,7 @@
 var React = require('react');
 var FavoritesItem = require('./FavoritesItem');
 
-require('../../styles/Favorites.css')
+require('../../styles/Favorites.css');
 
 var FavoritesList = React.createClass({
 

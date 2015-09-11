@@ -50,7 +50,7 @@ class LocationsStore extends EventEmitter {
 			// should not depend on data in order
 			// ensure unique locations
 			if (test) {
-				return false
+				return false;
 			} else {
 				uniqueLocations[location.station_id] = true;
 				return true;
@@ -68,7 +68,7 @@ class LocationsStore extends EventEmitter {
 		return Dispatcher.register((payload) => {
 			var action = payload.action;
 
-			switch(action.actionType) {
+			switch (action.actionType) {
 				case Constants.SET_ACTIVE_LOCATION:
 					this.setActiveLocation(payload.action.name);
 					break;
