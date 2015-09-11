@@ -6,7 +6,8 @@ var WeatherBox = require('./weatherbox/WeatherBox');
 var Map = require('./Map');
 var CurrentLocation = require('./CurrentLocation');
 var FavoritesList = require('./favorites/FavoritesList');
-var Actions = require('../actions/Actions');
+var FavoriteActions = require('../actions/FavoriteActions');
+var LocationActions = require('../actions/LocationActions');
 
 require('../styles/global.less');
 
@@ -41,7 +42,7 @@ var App = React.createClass({
 	},
 
 	componentDidMount() {
-		Actions.fetchLocations();
+		LocationActions.fetchLocations();
 	},
 
 	getInitialState() {
@@ -64,10 +65,10 @@ var App = React.createClass({
 
 	toggleFavorite(location) {
 		if (this.props.favorites.isFavorite(location)) {
-			Actions.removeFavorite(location);
+			FavoriteActions.removeFavorite(location);
 		}
 		else {
-			Actions.addFavorite(location);
+			FavoriteActions.addFavorite(location);
 		}
 	},
 
@@ -76,7 +77,7 @@ var App = React.createClass({
 	},
 
 	onNewLocation(location_name) {
-		Actions.setActiveLocation(location_name);
+		LocationActions.setActiveLocation(location_name);
 	},
 
 	render() {

@@ -2,21 +2,8 @@ var Constants = require('../constants/Constants');
 var Dispatcher = require('../dispatchers/Dispatcher');
 var LocationSource = require('../sources/LocationSource');
 
-var Actions = {
-	addFavorite(item) {
-		Dispatcher.handleViewAction({
-			actionType: Constants.ADD_FAVORITE,
-			item: item
-		});
-	},
 
-	removeFavorite(item) {
-		Dispatcher.handleViewAction({
-			actionType: Constants.REMOVE_FAVORITE,
-			item: item
-		});
-	},
-
+var LocationActions = {
 	setActiveLocation(name) {
 		Dispatcher.handleViewAction({
 			actionType: Constants.SET_ACTIVE_LOCATION,
@@ -27,10 +14,10 @@ var Actions = {
 	fetchLocations() {
 		LocationSource.fetch()
 			.then((locations) => {
-				Actions.updateLocations(locations);
+				this.updateLocations(locations);
 			})
 			.catch((errorMessage) => {
-				Actions.locationsFailed(errorMessage);
+				this.locationsFailed(errorMessage);
 			});
 	},
 
@@ -49,4 +36,4 @@ var Actions = {
 	}
 };
 
-module.exports = Actions;
+module.exports = LocationActions;
