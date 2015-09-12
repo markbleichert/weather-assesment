@@ -17,6 +17,11 @@ var Forecast = React.createClass({
 		};
 	},
 
+	handleOnClick(index) {
+		// just set up to test binding parameters to handler
+		console.log('clicked item: ', index);
+	},
+
 	renderWeather(weather, index) {
 		// using moment.js to format ISO date string to day format
 		var day = moment(weather.datetime).format('ddd');
@@ -34,7 +39,7 @@ var Forecast = React.createClass({
 		});
 
 		return (
-			<li className={'daily-item'} key={index}>
+			<li className={'daily-item'} key={index} onClick={this.handleOnClick.bind(this, index)}>
 				<div className={'daily-date'}>{day}</div>
 				<span className={imageClassName}></span>
 				<span className={'daily-temp'}>{weather.temperature_max}</span>
