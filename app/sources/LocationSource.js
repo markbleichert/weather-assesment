@@ -8,14 +8,14 @@ var LocationSource = {
 
 		// merge the results of to promise calls
 		return Promise.all([p1, p2]).then((results) => {
-			return [].concat.apply([], results)
+			return [].concat.apply([], results);
 		});
 	},
 
 	loadData(data) {
 		return new Promise((resolve, reject) => {
-			// simulate an asynchronous action where data is fetched on
-			// a remote server somewhere.
+			// simulate an asynchronous action where data is
+			// fetched on a remote server somewhere.
 			setTimeout(() => {
 				try {
 					// normalize data set
@@ -27,7 +27,6 @@ var LocationSource = {
 				} catch(e) {
 					reject(e);
 				}
-
 
 			}, 1000);
 		});

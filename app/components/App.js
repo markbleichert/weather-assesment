@@ -104,7 +104,6 @@ var App = React.createClass({
 						<br/>
 						<SearchBox
 							onSearch={this.onNewLocation}
-							label='Locations'
 							data={this.state.locationList} />
 
 						<FavoritesList

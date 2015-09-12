@@ -40,13 +40,11 @@ class LocationsStore extends EventEmitter {
 	}
 
 	getLocationList() {
-
 		var uniqueLocations = {};
 
 		return this.locations.filter((location) => {
 
 			var test = (location.station_id in uniqueLocations);
-
 			// should not depend on data in order
 			// ensure unique locations
 			if (test) {

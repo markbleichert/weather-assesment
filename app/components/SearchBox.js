@@ -8,22 +8,12 @@ var SearchBox = React.createClass({
 
 	propTypes: {
 		data: React.PropTypes.arrayOf(React.PropTypes.object),
-		status: React.PropTypes.string,
 		onSearch: React.PropTypes.func.isRequired
 	},
 
 	getDefaultProps() {
 		return {
-			data: [],
-			status: ''
-		};
-	},
-
-	getInitialState() {
-		return {
-			searchable: true,
-			disabled: false,
-			selectValue: ''
+			data: []
 		};
 	},
 
@@ -41,13 +31,11 @@ var SearchBox = React.createClass({
 
 	render() {
 		return (
-			<div id='find-a-forecast' className='section'>
+			<div id='find-a-forecast'>
 				<h2>Find weather forecast</h2>
-				<Select ref='stateSelect'
-						options={this.props.data}
-						searchable={this.state.searchable}
-						disabled={this.state.disabled}
-						onChange={this.updateValue}
+				<Select
+					options={this.props.data}
+					onChange={this.updateValue}
 				/>
 			</div>
 		);
