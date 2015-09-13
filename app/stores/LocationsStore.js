@@ -3,10 +3,10 @@ var Dispatcher = require('../dispatchers/Dispatcher');
 var EventEmitter = require('events').EventEmitter;
 
 class LocationsStore extends EventEmitter {
-	constructor(locations) {
+	constructor(locations, activeLocation) {
 		super();
-		this.activeLocation = 'Amsterdam';
-		this.locations = [];
+		this.activeLocation = activeLocation;
+		this.locations = locations;
 
 		this.registerDispatcher();
 	}
