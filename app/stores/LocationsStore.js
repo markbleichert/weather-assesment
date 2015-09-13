@@ -5,6 +5,7 @@ var EventEmitter = require('events').EventEmitter;
 class LocationsStore extends EventEmitter {
 	constructor(locations, activeLocation) {
 		super();
+
 		this.activeLocation = activeLocation;
 		this.locations = locations;
 

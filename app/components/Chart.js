@@ -1,11 +1,11 @@
-var React = require('react');
-var moment = require('moment');
-var LineChart = require("react-chartjs").Line;
+import React from 'react';
+import moment from 'moment';
+import {Line as LineChart} from 'react-chartjs';
 
-require('../styles/Chart.css');
+import '../styles/Chart.css';
 
-var Chart = React.createClass({
-	render: function() {
+class Chart extends React.Component {
+	render() {
 
 		var chartData = {
 			labels: this.props.locations.map((location) => {
@@ -43,9 +43,9 @@ var Chart = React.createClass({
 		};
 
 		return (
-			<LineChart className='PercipitationChart' data={chartData} />
+			<LineChart className='PercipitationChart' data={chartData}/>
 		);
 	}
-});
+};
 
-module.exports = Chart;
+export default Chart;
