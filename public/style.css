@@ -288,12 +288,7 @@
     line-height: 28px;
     padding: 2px;
 }
-
-#find-a-forecast span.status {
-    line-height: 28px;
-    font-size: 15px;
-    color: red;
-}.tabbed-forecast {
+.tabbed-forecast {
 	text-align: left;
 	margin-bottom: 0px;
 	margin-left: 0px;
@@ -606,6 +601,12 @@ li a {
     width: 120px;
 }
 
+.PercipitationChart {
+    display:block;
+    width: 250px;
+    height: 150px;
+}
+
 .glyphicon {
     font-size: 18px;
     z-index: 20;
@@ -646,13 +647,7 @@ li a {
     top: 50%;
     right: 10px;
     margin-top: -9px;
-}.PercipitationChart {
-    display:block;
-    width: 250px;
-    height: 150px;
-}
-
-/*!
+}/*!
  *  Weather Icons 1.3
  *  Updated November 30th, 2014
  *  Weather themed icons for Bootstrap
