@@ -1,7 +1,20 @@
+import moment from 'moment';
+
 class FavoritesSource {
 	constructor(localStorage) {
 		this.localStorage = localStorage;
+		this.normalize();
 
+	}
+
+	normalize() {
+		this.getFavorites().forEach((obj) => {
+			// remove stale items from previous versions
+			if (!obj.location.hasOwnProperty('place_name')) {
+				console.warn('Removed invalid favorite from storage');
+				this.removeFavorite(obj.location);
+			}
+		});
 	}
 
 	isFavorite(location) {
