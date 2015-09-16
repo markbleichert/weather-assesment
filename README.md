@@ -4,7 +4,8 @@ My coding assignment building a weather app with React.js
 
 Try the [deployed app](http://markbleichert.github.io/weather-assessment/) or read below hot to run it locally.
 
-Keep in mind that this is a coding assignment and there are some known bugs related to responsiveness and (no-)connectivity. These are listed in this issues list.
+Keep in mind that this is a coding assignment and there are some known bugs related to responsiveness and (no-)connectivity. 
+These are listed in this [issues list](https://github.com/markbleichert/weather-assessment/issues).
 
 
 ## How to run locally
