@@ -40,6 +40,12 @@ var Map = React.createClass({
 		// get the map dom element
 		var mapDomElement = React.findDOMNode(this.refs.map);
 
+		// @TODO: HANDLE MISSING GOOGLE NAMESPACE
+		// THIS IS A RATHER NAIVE IMPLEMENTATION THAT WILL CRASH THE
+		// COMPLETE APP WHEN THE GOOGLE OBJECT IS UNDEFINED DUE TO
+		// NETWORK PROBLEMS.
+		// THIS ERROR SITUATION MUST BE HANDLED NORMALLY
+
 		// create the map with our coordinates
 		var map = new google.maps.Map(mapDomElement, {
 			zoom: 8,
