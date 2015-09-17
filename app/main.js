@@ -9,8 +9,8 @@ var FavoritesSource = require('./sources/FavoritesSource');
 var locationsStore = new LocationsStore([], 'Amsterdam');
 
 // set up favorite store with local storage impl.
-var favoritesStoreImpl = new FavoritesSource(window.localStorage);
-var favoritesStore = new FavoritesStore(favoritesStoreImpl);
+var storageImpl = new FavoritesSource(window.localStorage); // or window.sessionStorage
+var favoritesStore = new FavoritesStore(storageImpl);
 
 // add some initial favorites
 favoritesStore.add({'place_name':'Amsterdam'});

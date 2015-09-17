@@ -1,14 +1,14 @@
 class FavoritesSource {
-	constructor(localStorage) {
-		this.localStorage = localStorage;
+	constructor(storage) {
+		this.storage = storage;
 	}
 
 	update(favorites) {
-		this.localStorage.setItem('favorites', JSON.stringify(favorites));
+		this.storage.setItem('favorites', JSON.stringify(favorites));
 	}
 
 	getItems() {
-		return JSON.parse(this.localStorage.getItem('favorites')) || [];
+		return JSON.parse(this.storage.getItem('favorites')) || [];
 	}
 }
 
