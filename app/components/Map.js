@@ -1,4 +1,5 @@
 var React = require('react');
+var GoogleMaps = require('../adapters/GoogleMapsProxy');
 
 require('../styles/Map.css');
 
@@ -15,73 +16,24 @@ var Map = React.createClass({
 	},
 
 	componentDidMount() {
-		// Only componentDidMount is called when the component is first added to
-		// the page. This is why we are calling the following method manually.
-		// This makes sure that our map initialization code is run the first time.
-		// This kind of works like a class contructor ;-)
-
-		this.componentDidUpdate();
+		var mapDomElement = React.findDOMNode(this.refs.map);
+		this.map = new GoogleMaps(mapDomElement);
 	},
 
 	componentDidUpdate() {
-		var lat = this.props.location.latitude;
-		var lng = this.props.location.longitude;
-
-		if (this.lastLat == lat && this.lastLng == lng) {
-			// The map has already been initialized at these coordinates.
-			// Return from this method so that we don't reinitialize it
-			// and cause it to flicker.
-			return;
-		}
-
-		this.lastLat = lat;
-		this.lastLng = lng;
-
-		// get the map dom element
-		var mapDomElement = React.findDOMNode(this.refs.map);
-
-		// @TODO: HANDLE MISSING GOOGLE NAMESPACE
-		// THIS IS A RATHER NAIVE IMPLEMENTATION THAT WILL CRASH THE
-		// COMPLETE APP WHEN THE GOOGLE OBJECT IS UNDEFINED DUE TO
-		// NETWORK PROBLEMS.
-		// THIS ERROR SITUATION MUST BE HANDLED NORMALLY
-
-		// create the map with our coordinates
-		var map = new google.maps.Map(mapDomElement, {
-			zoom: 8,
-			mapTypeControl: false,
-			center: {
-				lat: lat,
-				lng: lng
-			}
+		this.map.setMarker({
+			lat: this.props.location.latitude,
+			lng: this.props.location.longitude,
+			name: this.props.location.place_name
 		});
-
-		// build info window content
-		var contentString = `<div class="info">Weather station: <br/> ` +
-				`${this.props.location.place_name} <br/> ${lat} - ${lng}</div>`;
-
-		var infowindow = new google.maps.InfoWindow({
-			content: contentString
-		});
-
-		// Adding a marker to the location we are showing
-		var marker = new google.maps.Marker({
-			position: {
-				lat: lat,
-				lng: lng
-			},
-			map: map
-		});
-
-		// open by default
-		infowindow.open(map, marker);
 	},
 
 	render() {
 		return (
 			<div className='map-holder'>
-				<p>Loading...</p>
-				<div ref='map' className='map'></div>
+				<div ref='map' className='map'>
+					<p>Loading...</p>
+				</div>
 			</div>
 		);
 	}
