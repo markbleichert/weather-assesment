@@ -13,9 +13,9 @@ var storageImpl = new FavoritesSource(window.localStorage); // or window.session
 var favoritesStore = new FavoritesStore(storageImpl);
 
 // add some initial favorites
-favoritesStore.add({'place_name':'Amsterdam'});
-favoritesStore.add({'place_name':'Groningen'});
-favoritesStore.add({'place_name':'Maastricht'});
+favoritesStore.add({'place_name': 'Amsterdam'});
+favoritesStore.add({'place_name': 'Groningen'});
+favoritesStore.add({'place_name': 'Maastricht'});
 
 // pass configured stores to React and get started
 // @todo: choose different store property names

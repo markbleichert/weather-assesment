@@ -49,5 +49,4 @@ var WeatherBox = React.createClass({
 	}
 });
 
-
 module.exports = WeatherBox;

@@ -8,6 +8,7 @@ var LocationSource = {
 
 		// merge the results of to promise calls
 		return Promise.all([p1, p2]).then((results) => {
+			// jscs:disable
 			return [].concat.apply([], results);
 		});
 	},
@@ -24,7 +25,7 @@ var LocationSource = {
 					// return new normalized data
 					resolve(d);
 
-				} catch(e) {
+				} catch (e) {
 					reject(e);
 				}
 
@@ -34,7 +35,7 @@ var LocationSource = {
 
 	normalize(dataArray) {
 		return dataArray.map((location, index) => {
-			Object.keys(location).forEach((key) =>{
+			Object.keys(location).forEach((key) => {
 				// format ugly 'null' strings
 				if (location[key] === 'NULL') {
 					location[key] = '--';

@@ -15,6 +15,6 @@ var FavoriteActions = {
 			item: item
 		});
 	}
-}
+};
 
 module.exports = FavoriteActions;

@@ -2,7 +2,6 @@ var Constants = require('../constants/Constants');
 var Dispatcher = require('../dispatchers/Dispatcher');
 var LocationSource = require('../sources/LocationSource');
 
-
 var LocationActions = {
 	setActiveLocation(name) {
 		Dispatcher.handleViewAction({

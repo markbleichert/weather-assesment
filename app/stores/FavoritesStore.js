@@ -10,6 +10,7 @@ class FavoritesStore extends EventEmitter {
 		this.normalize();
 		this.registerDispatcher();
 	}
+
 	emitChange() {
 		this.emit('change');
 	}

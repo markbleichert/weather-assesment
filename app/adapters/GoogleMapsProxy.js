@@ -13,12 +13,12 @@ class GoogleMapsProxy {
 			this.info = new google.maps.InfoWindow({});
 
 		} catch (e) {
-			this.element.innerHTML='Google maps unavailable..';
+			this.element.innerHTML = 'Google maps unavailable..';
 			console.warn(e.message);
 		}
 	}
 
- 	setMarker(options) {
+	setMarker(options) {
 		// set marker only when map available
 		if (this.map) {
 			this._setMapOptions(options);

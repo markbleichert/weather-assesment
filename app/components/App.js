@@ -70,8 +70,7 @@ var App = React.createClass({
 	toggleFavorite(location) {
 		if (this.props.favorites.isFavorite(location)) {
 			FavoriteActions.removeFavorite(location);
-		}
-		else {
+		} else {
 			FavoriteActions.addFavorite(location);
 		}
 	},
