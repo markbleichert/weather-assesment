@@ -1,57 +1,97 @@
 {
-  "maxErrors": 5000,
-
-  // add jsx support
-  "esprima": "esprima-fb",
-
-  // target es3+, recognise keywords
-  "es3": true,
-
-  // attempt to convert ES6 to ES5 natively
+  "maxErrors": 20000,
   "esnext": true,
-
-  // target files
-  "fileExtensions": [".js", ".jsx"],
+  "fileExtensions": [".js"],
   "excludeFiles": [
-    "./node_modules/**/*",
-	"./app/fixtures/data-json.js"
+    "node_modules/**",
+    "bower_components/**",
+    "predefs/**",
+    "gulp/**",
+    "dist/**",
+    "spec/**",
+    "collection.js",
+    "gulpfile.js",
+    "externs.js"
   ],
 
-  // rules (http://jscs.info/rules)
-  "disallowSpacesInFunctionDeclaration": {
-    "beforeOpeningRoundBrace": true
-  },
-  "disallowSpacesInNamedFunctionExpression": {
-    "beforeOpeningRoundBrace": true
-  },
-  "disallowSpacesInCallExpression": true,
-  "disallowSpaceBeforeSemicolon": true,
-  "disallowSpaceBeforePostfixUnaryOperators": ["++", "--"],
-  "disallowSpaceBeforeComma": true,
-  "disallowSpaceAfterPrefixUnaryOperators": ["++", "--", "+", "-", "~", "!"],
-  "disallowSpaceAfterObjectKeys": true,
-  "disallowOperatorBeforeLineBreak": ["."],
-  "disallowNewlineBeforeBlockStatements": true,
-  "disallowMultipleSpaces": {
-    "allowEOLComments": true
-  },
-  "disallowMultipleVarDecl": true,
+  "validateIndentation": "\t",
+  "disallowMixedSpacesAndTabs": "smart",
   "disallowTrailingWhitespace": true,
-  "disallowSpacesInsideArrayBrackets": "all",
-  "disallowSpacesInsideParenthesizedExpression": true,
-  "disallowSpacesInsideParentheses": true,
-  "disallowTrailingComma": true,
+  "validateLineBreaks": "LF",
+  "requireLineFeedAtFileEnd": true,
+  "disallowMultipleSpaces": true,
+  "maximumLineLength": {
+    "value": 120,
+    "allowComments": true
+  },
+
   "disallowYodaConditions": true,
-  "requireAnonymousFunctions": {
-    "allExcept": ["declarations"]
-  },
-  "requireBlocksOnNewline": {
-    "includeComments": true,
-    "minLines": 1
-  },
+  "validateQuoteMarks": "'",
+  "requireSemicolons": true,
+
+  "requireNumericLiterals": true,
+  "requireSpread": true,
+
+  "disallowSpaceBeforeComma": true,
   "requireCommaBeforeLineBreak": true,
-  "requireCapitalizedConstructors": true,
-  "requireCamelCaseOrUpperCaseIdentifiers": true,
+  "disallowMultipleLineStrings": true,
+  "disallowMultipleLineBreaks": true,
+
+  "disallowSpacesInsideParentheses": true,
+  "disallowSpacesInsideArrayBrackets": true,
+  "disallowSpaceAfterObjectKeys": true,
+  "requireSpaceBeforeObjectValues": true,
+  "disallowTrailingComma": true,
+
+  "requireSpaceAfterLineComment": {
+    "allExcept": [
+      "#include",
+      "#without",
+      "#label",
+      "#endlabel",
+      "#if",
+      "#endif",
+      "#unless",
+      "#endunless",
+      "#set",
+      "#unset",
+      "#end"
+    ]
+  },
+
+  "requirePaddingNewLinesAfterUseStrict": true,
+  "validateNewlineAfterArrayElements": true,
+  "requireLineBreakAfterVariableAssignment": true,
+  "requirePaddingNewLinesAfterBlocks": {
+    "allExcept": [
+      "inCallExpressions",
+      "inNewExpressions",
+      "inArrayExpressions",
+      "inProperties"
+    ]
+  },
+
+  "requireSpaceBeforeBlockStatements": true,
+  "disallowNewlineBeforeBlockStatements": true,
+  "requireSpacesInForStatement": true,
+  "requireSpaceBeforeBinaryOperators": true,
+  "requireSpaceAfterBinaryOperators": true,
+  "requireSpaceBetweenArguments": true,
+  "disallowSpacesInCallExpression": true,
+
+  "jsDoc": {
+    "checkAnnotations": {
+      "preset": "closurecompiler",
+      "extra": {
+        "abstract": false
+      }
+    },
+    "checkParamNames": true,
+    "requireParamTypes": true,
+    "requireReturnTypes": true,
+    "requireNewlineAfterDescription": true
+  },
+
   "requireCurlyBraces": [
     "if",
     "else",
@@ -61,50 +101,84 @@
     "try",
     "catch"
   ],
-  "requireDotNotation": {
-    "allExcept": ["keywords"]
-  },
-  "requireMatchingFunctionName": true,
-  "requireLineFeedAtFileEnd": true,
-  "requireLineBreakAfterVariableAssignment": true,
-  // "requireVarDeclFirst": true, // NOTE bugged, does not work for es6 methods :(
-  "requireObjectKeysOnNewLine": true,
-  "requireOperatorBeforeLineBreak": [
-      "?",
-      "=",
-      "+",
-      "-",
-      "/",
-      "*",
-      "==",
-      "===",
-      "!=",
-      "!==",
-      ">",
-      ">=",
-      "<",
-      "<="
+
+  "requireSpaceAfterKeywords": [
+    "do",
+    "for",
+    "if",
+    "else",
+    "switch",
+    "case",
+    "try",
+    "catch",
+    "finally",
+    "void",
+    "while",
+    "return",
+    "typeof",
+    "function"
   ],
-  "requirePaddingNewLinesAfterUseStrict": true,
-  "requirePaddingNewLinesBeforeExport": true,
-  "requireParenthesesAroundIIFE": true,
-  "requireSemicolons": true,
-  "requireSpaceBeforeBinaryOperators": true,
-  "requireSpaceAfterBinaryOperators": true,
-  "requireSpaceAfterKeywords": true,
-  "requireSpaceBeforeBlockStatements": true,
-  "requireSpaceBetweenArguments": true,
+
+  "disallowKeywords": [
+    "with"
+  ],
+
+  "disallowKeywordsOnNewLine": [
+    "else",
+    "catch",
+    "finally"
+  ],
+
+  "disallowSpaceAfterPrefixUnaryOperators": true,
+  "disallowSpaceBeforePostfixUnaryOperators": [
+    "++",
+    "--"
+  ],
+
+  "disallowOperatorBeforeLineBreak": [
+    "~",
+    ".",
+    "::"
+  ],
+
+  "validateAlignedFunctionParameters": true,
+  "requireSpacesInFunctionDeclaration": {
+    "beforeOpeningCurlyBrace": true
+  },
+
+  "disallowSpacesInFunctionDeclaration": {
+    "beforeOpeningRoundBrace": true
+  },
+
   "requireSpacesInAnonymousFunctionExpression": {
     "beforeOpeningRoundBrace": true,
     "beforeOpeningCurlyBrace": true,
     "allExcept": ["shorthand"]
   },
-  "requireSpacesInForStatement": true,
-  "requireSpacesInConditionalExpression": true,
-  "validateQuoteMarks": {
-    "mark": "'",
-    "escape": true
+
+  "disallowSpacesInNamedFunctionExpression": {
+    "beforeOpeningRoundBrace": true
   },
-  "validateParameterSeparator": ", ",
-  "validateIndentation": "\t"
+
+  "requireSpacesInNamedFunctionExpression": {
+    "beforeOpeningCurlyBrace": true
+  },
+
+  "requireSpacesInConditionalExpression": {
+    "afterTest": true,
+    "beforeConsequent": true,
+    "afterConsequent": true,
+    "beforeAlternate": true
+  },
+
+  "disallowSpaceBeforeBinaryOperators": [
+    ","
+  ],
+
+  "disallowImplicitTypeConversion": [
+    "numeric",
+    "string",
+    "binary",
+    "boolean"
+  ]
 }
